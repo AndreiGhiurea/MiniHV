@@ -1,0 +1,87 @@
+%include "lib.yasm"
+
+global VmPreexitHandler
+global VmPreLaunch
+global VmPreResume
+
+extern VmExitHandler
+
+global InvalidateEPT
+
+extern RestoreRegisters
+
+align 0x10, db 0
+[bits 64]
+VmPreexitHandler:
+    save_proc_state
+
+    mov             rcx, rsp
+
+    call_func_64    VmExitHandler, rcx
+
+    ; we should never return
+    debug_break
+
+align 0x10, db 0
+[bits 64]
+; VMX_RESULT __cdecl* VmPreLaunch( PROCESSOR_STATE* ProcessorState )
+VmPreLaunch:
+    ; we save_volatiles in case we fail
+    ; vmlaunch and we need to return
+    save_volatiles
+
+    ; we set guest GPR's
+    call        RestoreRegisters
+    vmlaunch
+
+    ; if we're here we failed =>
+    ; we need to restore_volatiles
+    restore_volatiles
+
+    check_vmoperation
+
+align 0x10, db 0
+[bits 64]
+; VMX_RESULT __cdecl* VmPreResume( PROCESSOR_STATE* ProcessorState )
+VmPreResume:
+    save_volatiles
+
+    ; we restore GUEST GPR's
+    call        RestoreRegisters
+    vmresume
+
+    ; if we're here we failed =>
+    ; we need to restore_volatiles
+    restore_volatiles
+
+    check_vmoperation
+
+align 0x10, db 0
+[bits 64]
+VmClearRegisters:
+    xor     rax,    rax
+    xor     rcx,    rcx
+    xor     rdx,    rdx
+    xor     rbx,    rbx
+    xor     rbp,    rbp
+    xor     rsi,    rsi
+    xor     rdi,    rdi
+
+    xor     r8,     r8
+    xor     r9,     r9
+    xor     r10,    r10
+    xor     r11,    r11
+    xor     r12,    r12
+    xor     r13,    r13
+    xor     r14,    r14
+    xor     r15,    r15
+
+    ret
+
+align 0x10, db 0
+[BITS 64]
+; VMX_RESULT __cdecl InvalidateEPT( IN QWORD Type, IN PVOID Descriptor )
+InvalidateEPT:
+    mov     rax, rdx
+    invept  rcx, [rax]
+    check_vmoperation

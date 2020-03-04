@@ -1,0 +1,358 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
+    </Filter>
+    <Filter Include="Build Files">
+      <UniqueIdentifier>{e0476287-9b5f-42c9-b43f-09e7f8dec8b0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\base">
+      <UniqueIdentifier>{a237abf5-d5d9-45c9-ac3b-ef51f9912926}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\boot">
+      <UniqueIdentifier>{8568b21f-539f-4f6b-9f1f-3aac951f5dec}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\communication">
+      <UniqueIdentifier>{1831c1e6-7e2e-41df-bb23-2ee0174edc52}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\core">
+      <UniqueIdentifier>{7986ddfb-058b-4f38-b369-20a7d9817401}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\crt">
+      <UniqueIdentifier>{43901c8d-87c0-4665-a22c-e57e1f312e37}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\debug">
+      <UniqueIdentifier>{aa119400-a91c-47fe-8a68-a5f2d3c6d0ef}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\debug\dump">
+      <UniqueIdentifier>{a889a5f1-a98c-46a0-86f0-f7c81c508e86}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\devices">
+      <UniqueIdentifier>{6da43401-1b13-4e86-9fe5-50795409e1a0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\HAL 9000">
+      <UniqueIdentifier>{4135b886-2ffd-4ac1-9394-4899e9bc923d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\virtualization">
+      <UniqueIdentifier>{415bd389-2020-43dd-9f96-e0526a158096}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\communication\common">
+      <UniqueIdentifier>{18b3578a-cdad-44e4-9ee0-3147abeb10c7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\boot">
+      <UniqueIdentifier>{2177fe55-c7d6-4c08-b06f-89a75c59c9ec}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\communication">
+      <UniqueIdentifier>{ebb25c3b-424a-4b84-8081-963612e268dc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\core">
+      <UniqueIdentifier>{dbff2070-f1b4-46c9-b926-3e0364feb810}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\crt">
+      <UniqueIdentifier>{f2e5f2e2-ab62-4103-8cef-c65eed3e91b0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\debug">
+      <UniqueIdentifier>{b9684e1d-c1b8-4d97-b34c-6c3bc7961810}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\devices">
+      <UniqueIdentifier>{f262eb90-51e0-491d-af80-279f8b5d4b42}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\HAL 9000">
+      <UniqueIdentifier>{da3a5425-7837-472f-8f44-3dd34d71981e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\virtualization">
+      <UniqueIdentifier>{592c30f7-524b-466e-b0d8-5a68140d560e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\debug\dump">
+      <UniqueIdentifier>{41fb35e3-ab15-47ed-b872-7f2a813b79a7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\base\yasm">
+      <UniqueIdentifier>{7a1e3ac6-95ed-499d-b3d7-3ec398b8c1ac}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="minihvex\vmcs.c">
+      <Filter>Source Files\virtualization</Filter>
+    </ClCompile>
+    <ClCompile Include="minihvex\vmexit.c">
+      <Filter>Source Files\virtualization</Filter>
+    </ClCompile>
+    <ClCompile Include="minihvex\vmguest.c">
+      <Filter>Source Files\virtualization</Filter>
+    </ClCompile>
+    <ClCompile Include="minihvex\vmmemory.c">
+      <Filter>Source Files\virtualization</Filter>
+    </ClCompile>
+    <ClCompile Include="minihvex\vmx_capability.c">
+      <Filter>Source Files\virtualization</Filter>
+    </ClCompile>
+    <ClCompile Include="minihvex\dmp_apic.c">
+      <Filter>Source Files\debug\dump</Filter>
+    </ClCompile>
+    <ClCompile Include="minihvex\dmp_cpu.c">
+      <Filter>Source Files\debug\dump</Filter>
+    </ClCompile>
+    <ClCompile Include="minihvex\dmp_memory.c">
+      <Filter>Source Files\debug\dump</Filter>
+    </ClCompile>
+    <ClCompile Include="minihvex\dmp_minihv.c">
+      <Filter>Source Files\debug\dump</Filter>
+    </ClCompile>
+    <ClCompile Include="minihvex\dmp_mtrr.c">
+      <Filter>Source Files\debug\dump</Filter>
+    </ClCompile>
+    <ClCompile Include="minihvex\dmp_multiboot.c">
+      <Filter>Source Files\debug\dump</Filter>
+    </ClCompile>
+    <ClCompile Include="minihvex\dmp_pci.c">
+      <Filter>Source Files\debug\dump</Filter>
+    </ClCompile>
+    <ClCompile Include="minihvex\dmp_vmcs.c">
+      <Filter>Source Files\debug\dump</Filter>
+    </ClCompile>
+    <ClCompile Include="minihvex\apic.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
+    <ClCompile Include="minihvex\pci.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
+    <ClCompile Include="minihvex\pit.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
+    <ClCompile Include="minihvex\lock.c">
+      <Filter>Source Files\HAL 9000</Filter>
+    </ClCompile>
+    <ClCompile Include="minihvex\idt.c">
+      <Filter>Source Files\HAL 9000</Filter>
+    </ClCompile>
+    <ClCompile Include="minihvex\mtrr.c">
+      <Filter>Source Files\HAL 9000</Filter>
+    </ClCompile>
+    <ClCompile Include="minihvex\segment.c">
+      <Filter>Source Files\HAL 9000</Filter>
+    </ClCompile>
+    <ClCompile Include="minihvex\task.c">
+      <Filter>Source Files\HAL 9000</Filter>
+    </ClCompile>
+    <ClCompile Include="minihvex\int15_memory.c">
+      <Filter>Source Files\boot</Filter>
+    </ClCompile>
+    <ClCompile Include="minihvex\init_asm.c">
+      <Filter>Source Files\boot</Filter>
+    </ClCompile>
+    <ClCompile Include="minihvex\serial.c">
+      <Filter>Source Files\communication</Filter>
+    </ClCompile>
+    <ClCompile Include="minihvex\acpi_interface.c">
+      <Filter>Source Files\core</Filter>
+    </ClCompile>
+    <ClCompile Include="minihvex\acpi_osl.c">
+      <Filter>Source Files\core</Filter>
+    </ClCompile>
+    <ClCompile Include="minihvex\idt_handlers.c">
+      <Filter>Source Files\core</Filter>
+    </ClCompile>
+    <ClCompile Include="minihvex\init64.c">
+      <Filter>Source Files\core</Filter>
+    </ClCompile>
+    <ClCompile Include="minihvex\paging_tables.c">
+      <Filter>Source Files\core</Filter>
+    </ClCompile>
+    <ClCompile Include="minihvex\display.c">
+      <Filter>Source Files\crt</Filter>
+    </ClCompile>
+    <ClCompile Include="minihvex\hv_assert.c">
+      <Filter>Source Files\core</Filter>
+    </ClCompile>
+    <ClCompile Include="minihvex\cpumu.c">
+      <Filter>Source Files\HAL 9000</Filter>
+    </ClCompile>
+    <ClCompile Include="minihvex\vmx_operations.c">
+      <Filter>Source Files\virtualization</Filter>
+    </ClCompile>
+    <ClCompile Include="minihvex\hv_heap.c">
+      <Filter>Source Files\crt</Filter>
+    </ClCompile>
+    <ClCompile Include="minihvex\dmp_common.c">
+      <Filter>Source Files\debug\dump</Filter>
+    </ClCompile>
+    <ClCompile Include="minihvex\check_input.c">
+      <Filter>Source Files\core</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="minihvex\headers\acpi_interface.h">
+      <Filter>Header Files\core</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\check_input.h">
+      <Filter>Header Files\core</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\data.h">
+      <Filter>Header Files\core</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\idt_handlers.h">
+      <Filter>Header Files\core</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\dmp_apic.h">
+      <Filter>Header Files\debug\dump</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\dmp_cpu.h">
+      <Filter>Header Files\debug\dump</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\dmp_memory.h">
+      <Filter>Header Files\debug\dump</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\dmp_minihv.h">
+      <Filter>Header Files\debug\dump</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\dmp_mtrr.h">
+      <Filter>Header Files\debug\dump</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\dmp_multiboot.h">
+      <Filter>Header Files\debug\dump</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\dmp_pci.h">
+      <Filter>Header Files\debug\dump</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\dmp_vmcs.h">
+      <Filter>Header Files\debug\dump</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\apic.h">
+      <Filter>Header Files\devices</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\pci.h">
+      <Filter>Header Files\devices</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\pit.h">
+      <Filter>Header Files\devices</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\vmcs.h">
+      <Filter>Header Files\virtualization</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\vmexit.h">
+      <Filter>Header Files\virtualization</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\vmguest.h">
+      <Filter>Header Files\virtualization</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\vmmemory.h">
+      <Filter>Header Files\virtualization</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\vmx_capability.h">
+      <Filter>Header Files\virtualization</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\idt.h">
+      <Filter>Header Files\HAL 9000</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\lock.h">
+      <Filter>Header Files\HAL 9000</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\mtrr.h">
+      <Filter>Header Files\HAL 9000</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\segment.h">
+      <Filter>Header Files\HAL 9000</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\task.h">
+      <Filter>Header Files\HAL 9000</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\display.h">
+      <Filter>Header Files\crt</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\ipc.h">
+      <Filter>Header Files\core</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\ipc_handler.h">
+      <Filter>Header Files\core</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\minihv.h">
+      <Filter>Header Files\core</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\paging_tables.h">
+      <Filter>Header Files\core</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\processor.h">
+      <Filter>Header Files\base</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\int15_memory.h">
+      <Filter>Header Files\boot</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\init_asm.h">
+      <Filter>Header Files\boot</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\multiboot.h">
+      <Filter>Header Files\boot</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\ept.h">
+      <Filter>Header Files\virtualization</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\log.h">
+      <Filter>Header Files\communication</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\serial.h">
+      <Filter>Header Files\communication</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\vmexit_reason.h">
+      <Filter>Header Files\communication\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\vmexit_stats.h">
+      <Filter>Header Files\communication\common</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\hv_assert.h">
+      <Filter>Header Files\core</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\cpumu.h">
+      <Filter>Header Files\HAL 9000</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\vmx_operations.h">
+      <Filter>Header Files\virtualization</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\hv_heap.h">
+      <Filter>Header Files\crt</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\dmp_common.h">
+      <Filter>Header Files\debug\dump</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <YASM Include="minihvex\yasm\vm_ops.yasm">
+      <Filter>Source Files\virtualization</Filter>
+    </YASM>
+    <YASM Include="minihvex\yasm\exports.yasm">
+      <Filter>Source Files\HAL 9000</Filter>
+    </YASM>
+    <YASM Include="minihvex\yasm\_init32.yasm">
+      <Filter>Source Files\boot</Filter>
+    </YASM>
+    <YASM Include="minihvex\yasm\lower_mem.yasm">
+      <Filter>Source Files\boot</Filter>
+    </YASM>
+    <YASM Include="minihvex\yasm\isr.yasm">
+      <Filter>Source Files\core</Filter>
+    </YASM>
+    <YASM Include="minihvex\yasm\lib.yasm">
+      <Filter>Header Files\base\yasm</Filter>
+    </YASM>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="minihvex\yasm\structs.yasm">
+      <Filter>Header Files\base\yasm</Filter>
+    </None>
+    <None Include="minihvex\yasm\macros.yasm">
+      <Filter>Header Files\base\yasm</Filter>
+    </None>
+    <None Include="minihvex\yasm\defines.yasm">
+      <Filter>Header Files\base\yasm</Filter>
+    </None>
+  </ItemGroup>
+</Project>

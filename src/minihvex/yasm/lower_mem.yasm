@@ -1,0 +1,579 @@
+;
+;
+;   The following code will be copied at address LOW_MEMORY_ADDRESS and will
+;   execute code in the first 1 MB of memory
+;
+;   The layout is the following one:
+;
+;   at LOW_MEMORY_ADDRESS + 0x0: GDT LowGdtBase
+;   at LOW_MEMORY_ADDRESS + 0x100: PM32_to_RM16 function
+;   at LOW_MEMORY_ADDRESS + 0x200: RM16_to_PM32 function
+;   at LOW_MEMORY_ADDRESS + 0x300: RetrieveInt15Map function
+;   at LOW_MEMORY_ADDRESS + 0x400: CallToRM function
+;   at LOW_MEMORY_ADDRESS + 0x500: Preloader function
+;   at LOW_MEMORY_ADDRESS + 0x700: no of memory map entries
+;   at LOW_MEMORY_ADDRESS + 0x710: memory map entries
+;   There is a gap of 2304 bytes which should be enough for 96 entries
+;   at LOW_MEMORY_ADDRESS + PAGE_SIZE: trampStart function
+
+
+%include "lib.yasm"
+
+extern ApicInitAPCpu
+
+LowGdtBase:
+.gdt_size           dw  ( LowGdtTable.end - LowGdtTable - 1 )
+.gdt_address        dq  LOW_GDT_BASE_ADDRESS + 0x10
+
+align               0x8,    db 'a'
+
+LowGdtTable:                                                ; GDT with 1+6 entries
+.null               dq  0
+.data64             dq  GDT_DESC_DATA64                     ; Data segment
+.code64             dq  GDT_DESC_CODE64                     ; Code segment, 64 bit, execute / read, present
+.data32             dq  GDT_DESC_DATA32
+.code32             dq  GDT_DESC_CODE32
+.data16             dq  GDT_DESC_DATA16
+.code16             dq  GDT_DESC_CODE16
+.end
+
+times               (0x100 - ( LowGdtTable.end - LowGdtBase ) ) db 'z'
+
+; this function goes from 32 bit PM to 16 bit RM  ( will be copied in LOW_PM32_RM16_ADDRESS )
+PM32_to_RM16:
+    [bits 32]
+    cli                     ; disable interrupts
+
+    lgdt    [LOW_MEMORY_ADDRESS]
+
+    mov     eax,        'TTTT'
+    mov     [0xB8024],  eax
+
+    jmp     GDT_DESC(LowGdtTable,code16):( LOW_PM32_RM16_ADDRESS + ( PM32_to_RM16.bits16 - PM32_to_RM16 ) )
+.bits16:
+    [bits 16]
+    mov     ax,     GDT_DESC(LowGdtTable,data16)
+    mov     ds,     ax
+    mov     es,     ax          ;   set the data descriptors
+    mov     ss,     ax
+    mov     fs,     ax
+    mov     gs,     ax
+
+    push    DWORD   REAL_MODE_IVT_BASE
+    push    WORD    REAL_MODE_IVT_LIMIT
+
+    lidt    [esp]
+
+    add     esp,    0x6
+
+    mov     eax,    cr0
+    and     eax,    ~(CR0_CD | CR0_NW | CR0_PE ) ; protection, CD and NW will now be disabled
+    mov     cr0,    eax
+
+    jmp     ( 0x0 ):( LOW_PM32_RM16_ADDRESS + ( PM32_to_RM16.seg0 - PM32_to_RM16 ) )
+.seg0:
+
+    xor     ax,     ax
+    mov     ds,     ax
+    mov     es,     ax          ;   set the data descriptors
+    mov     ss,     ax
+    mov     fs,     ax
+    mov     gs,     ax
+
+    ; the ret now only take the RA as 2 bytes and we need to
+    ; free the next 2 bytes too(HIGH WORD of the RA)
+    ret     2
+.end
+
+times               (0x100 - ( PM32_to_RM16.end - PM32_to_RM16 ) ) db 'p'
+
+; this function goes from 16 bit RM to 32 bit PM
+; ( will be copied in LOWER_MEMORY_ADDRESS + (PM32_to_RM16.end - PM32_to_RM16 ) )
+; LOW_RM16_PM32_ADDRESS
+; void __stdcall RM16_to_PM32( DWORD OldStack )
+RM16_to_PM32:
+    [bits 16]
+    ;   use PUSHFD
+    ;   because flags is only 16 bit while EFLAGS will be 32bit
+    pushfd                      ;   save current flags
+    cli
+
+    lgdt    [LOW_GDT_BASE_ADDRESS]      ;   set the GDT
+
+    mov     eax,    cr0
+    or      al,     (CR0_PE|CR0_NE)     ;   set PE and NE flag
+    and     eax,    ~(CR0_CD|CR0_NW)    ;   and clear CD and NW
+    mov     cr0,    eax
+
+    jmp     GDT_DESC(LowGdtTable,code32):( LOW_RM16_PM32_ADDRESS + ( RM16_to_PM32.bits32 - RM16_to_PM32 ) )
+
+.bits32:
+    [bits 32]                   ;   we're in 32 bits
+    mov     ax,     GDT_DESC(LowGdtTable,data32)
+    mov     ds,     ax
+    mov     es,     ax          ;   set the data descriptors
+    mov     ss,     ax
+    mov     fs,     ax
+    mov     gs,     ax
+
+    popfd                       ;   restore flags
+
+    ; we should first restore old stack
+    movzx   edx,    WORD [esp]
+    mov     ebx,    [esp+2]
+    mov     esp,    ebx         ; we have the old stack
+
+    mov     [esp],  edx         ; we don't do a push because we still have
+                                ; the RA from PM32_to_RM16 function
+
+    ret
+.end
+
+
+times               (0x100 - ( RM16_to_PM32.end - RM16_to_PM32 ) ) db 'r'
+
+; __cdecl void proc16 RetrieveInt15Map( WORD BufferSelector, WORD BufferAddress, WORD* NumberOfEntries )
+[bits 16]
+RetrieveInt15Map:
+    push    bp
+    mov     bp,         sp
+    sub     sp,         2
+
+    xor     ax,         ax
+    mov     [esp],      ax
+
+    xor     ebx,        ebx                             ; continuation code
+
+    mov     ax,         [p16(0)]
+    mov     es,         ax
+
+    mov     ax,         [p16(1)]
+    mov     di,         ax
+
+.loop:
+    mov     eax,        INT15_E820_CODE
+
+    mov     ecx,        INT15_MEMORY_MAP_ENTRY_size
+    mov     edx,        INT15_E820_SIGNATURE
+
+    sti
+    int     15h
+    jc      .finished
+
+    cmp     eax,        INT15_E820_SIGNATURE
+    jne     .error
+
+    cmp     ecx,        INT15_MEMORY_MAP_ENTRY_MIN_SIZE
+    jl      .error
+
+    cmp     ecx,        INT15_MEMORY_MAP_ENTRY_size
+    jnl     .next_entry
+
+    mov     si,         di
+    add     si,         INT15_MEMORY_MAP_ENTRY_MIN_SIZE
+
+    ; extended attribute
+    mov     eax,        1
+
+    mov     [es:si],    eax
+
+.next_entry:
+    mov     ax,         [esp]
+    inc     ax
+    mov     [esp],      ax
+
+    cmp     ax,         MAX_NO_OF_MEMORY_MAP_ENTRIES
+    jge     .error
+
+    add     di,         INT15_MEMORY_MAP_ENTRY_size
+
+    test    ebx, ebx
+    jz      .finished
+    jmp     .loop
+.error:
+    mov     ax,         0xB800
+    mov     fs,         ax
+    mov     si,         0x230
+    mov     ax,         'KK'
+    mov     [fs:si],    ax
+
+    cli
+    hlt
+
+.finished:
+    mov     ax,     [esp]
+    test    ax,     ax
+    jz      .error
+
+    mov     si,     [p16(2)]
+    mov     [si],   ax
+
+    add     sp,     2
+    pop     bp
+
+    cli
+
+    ret     2*3
+.end:
+
+times               (0x100 - ( RetrieveInt15Map.end - RetrieveInt15Map ) ) db 'k'
+CallToRM:
+    [bits 32]
+    push        ebp
+    mov         ebp,     esp
+    pusha
+
+    push    LOW_CALL_TO_RM_ADDRESS + ( CallToRM.bits16 - CallToRM )
+    push    LOW_PM32_RM16_ADDRESS
+    ret
+    [bits 16]
+.bits16:
+    ; here's where all the work will happen
+    mov        cx,     WORD [bp + 3 * 4]        ; cx <- NumberOfParameters
+
+    xor        si,     si                       ; i = 0
+.setare_param:
+    cmp        si,     cx                       ; i >= NumberOfParameters?
+    jae        .final_bucla                     ; if TRUE end loop
+
+    dec        cx
+
+    mov        si,     cx                       ; si <- si * 4
+    shl        si,     2
+
+    mov        ax,     WORD [bp + 4 * 4 + si]   ; get the (n-i)th parameter
+
+    xor        si,     si                       ; si <- si / 4
+
+    push    ax                                  ; set parameter (n-i) on the stack
+
+    jmp        .setare_param
+
+.final_bucla:
+    call    [bp + 8]                        ; call Proc
+
+    mov     ax,         sp
+    sub     ax,         4
+    push    0x0
+    push    ax        ; we need to substract 4 so after the RET we'll have LOW_MEMORY_STACK_TOP
+
+    push    LOW_CALL_TO_RM_ADDRESS + ( CallToRM.bits32 - CallToRM )
+    jmp     0:LOW_RM16_PM32_ADDRESS
+    [bits 32]
+.bits32:
+    mov     eax,        'TTTT'
+    mov     [0xB8048],  eax
+
+    popa
+
+    pop        ebp
+    ret
+.end:
+
+times               (0x100 - ( CallToRM.end - CallToRM ) ) db 's'
+[bits 16]
+Preloader:
+    ; shouldn't be necessary because when the hypervisor
+    ; starts the guest RFLAGS has only the reserved bit set
+
+    ; this is done for clarity
+    cli
+
+    mov     esp,        MBR_LOAD_ADDRESS
+
+    ; the preloader will be started with the initial DL value (the value)
+    ; from which the iterations over the disks must be started until
+    ; a suitable MBR is found (i.e. a MBR which is not ours)
+    mov     ax,         0xB800
+    mov     gs,         ax
+
+    xor     ax,         ax
+    mov     ds,         ax
+    mov     es,         ax
+    mov     fs,         ax
+    mov     ss,         ax
+
+    ; write to video memory
+    mov     [gs:0],     WORD '11'
+
+    mov     si,     4
+
+
+    ; then we will read the MBR
+.ReadMBR:
+    cmp     dl,     0x90
+    ja      .noValidDisk
+
+    xor     ah,     ah                  ; AH = reset disk controller
+    int     13h                         ; DISK_IO
+
+    push    dx
+
+    ; check if new extensions are available
+    mov     bx,     0x55AA              ; magic :)
+    mov     ah,     0x41                ; check extensions
+    int     13h
+
+    pop     dx
+
+    ; if carry set => not supported
+    jc      .ReadOld
+
+    ; if they are => call with new int 13h
+    mov     [gs:4],     WORD 'FF'
+
+    xor     ax, ax
+    mov     ds, ax
+
+    push    dx
+
+    mov     si,     LOW_PRELOADER_ADDRESS + PRELOADER_CODE_SIZE - DISK_ADDRESS_PACKET_size
+    mov     [si + DISK_ADDRESS_PACKET.Size], BYTE DISK_ADDRESS_PACKET_size
+    mov     [si + DISK_ADDRESS_PACKET.Reserved], BYTE 0
+    mov     [si + DISK_ADDRESS_PACKET.SectorsToTransfer], WORD 1
+    mov     [si + DISK_ADDRESS_PACKET.BufferOffset], WORD MBR_LOAD_ADDRESS
+    mov     [si + DISK_ADDRESS_PACKET.BufferSegment], WORD 0
+    mov     [si + DISK_ADDRESS_PACKET.StartingLBA], DWORD 0
+    mov     [si + DISK_ADDRESS_PACKET.UpperLBAPart], DWORD 0
+    mov     ah, 0x42
+    int     13h
+
+    pop     dx
+    inc     dx
+
+    jnc     .execMBR
+    ; error occured
+
+    cmp     ah, 0x80 ; => TO
+    jne     .endCmp
+    mov     [gs:11], byte 4
+    mov     [gs:10], byte 'T'
+    mov     [gs:13], byte 4
+    mov     [gs:12], byte 'O'
+    jmp     .ReadMBR
+.endCmp
+    ; we have error code in AH
+
+    mov     [gs:10],  WORD 'CC'
+    jmp     .ReadMBR
+
+.ReadOld:
+    ; else call with old int 13h
+    mov     [gs:4],     WORD '33'
+
+    xor     ax,     ax
+    mov     es,     ax
+
+    push    dx
+
+    mov     bx,     MBR_LOAD_ADDRESS    ; es:bx buffer address
+    xor     dh,     dh                  ; dh - head number
+    mov     cl,     1                   ; cl - sector number
+    xor     ch,     ch                  ; ch - cylinder number
+    mov     al,     1                   ; al - sector count
+    mov     ah,     2                   ; ah - read sectors
+    int     13h                         ; DISK_IO
+
+    pop     dx
+    inc     dl
+
+    add     si,     2
+    jc      .ReadMBR                    ; read failed
+
+.execMBR:
+    mov     [gs:6],     WORD '44'
+
+    mov     eax,    [MBR_LOAD_ADDRESS+MBR_SIZE-MBR_SIGNATURE_SIZE-MBR_PARTITION_ENTRY_SIZE]
+    cmp     eax,    MBR_MAGIC_SIGNATURE
+    je      .ReadMBR    ; the partition we found contains our loader
+
+    dec     dl
+
+    ; then we will execute the MBR
+
+    ; just to be safe, we reset es to 0
+    xor     ax,     ax
+    mov     gs,     ax
+    mov     es,     ax
+
+    ; x86 processors except DS to be 0x40
+    ; and SP = 0x400
+    mov     ax,     0x40
+    mov     ds,     ax
+
+    mov     sp,     0x400
+
+    ; giving control to the MBR :)
+    jmp     00:MBR_LOAD_ADDRESS
+
+.noValidDisk:
+    ; we should not reach this
+    mov     ax,     0xB800
+    mov     gs,     ax
+    mov     [gs:10],    WORD 'EE'
+
+    hlt
+.end
+
+TestGPRSaving:
+
+.end
+
+times ( PRELOADER_CODE_SIZE - ( TestGPRSaving.end - Preloader ) ) db 'z'
+
+PreloaderEnd:
+
+; for some reason align 0x400 is the max acceptable
+; we need to page align the code
+times               (PAGE_SIZE - ( PreloaderEnd - LowGdtBase ) ) db 'x'
+
+; This is where each AP will start executing code
+; LOW_MEMORY_ADDRESS + PAGE_SIZE
+[bits 16]
+trampStart:
+    wbinvd      ; invalidate caches
+    cli         ; disable interrupts
+
+    cld         ; no surprises, please
+
+    jmp     0:LOW_MEMORY_TRAMP_START + ( trampStart.reloadCs - trampStart )
+.reloadCs:
+    ; this is where the jump will take us
+    xor     ax, ax
+    mov     ds, ax
+    mov     es, ax
+    mov     gs, ax
+    mov     fs, ax
+
+    mov     ss, ax
+    mov     sp, LOW_MEMORY_STACK_TOP
+
+    mov     ax,         LOW_MEMORY_CHECK_A20_GATE
+    call    ax
+
+    test    ax,     ax
+    jnz     .gate_enabled
+
+    mov     ax,         LOW_MEMORY_ENABLE_A20_GATE
+    call    ax
+
+    cli
+
+.gate_enabled:
+    push    0x0
+    push    LOW_MEMORY_STACK_TOP - 4        ; we need to substract 4 so after the RET we'll have LOW_MEMORY_STACK_TOP
+
+    push    LOW_MEMORY_TRAMP32_START
+    jmp     0:LOW_RM16_PM32_ADDRESS
+
+align               0x100, db 0
+
+check_a20:
+   [bits 16]
+    pushf
+    push ds
+    push es
+    push di
+    push si
+
+    cli
+
+    xor ax, ax ; ax = 0
+    mov es, ax
+
+    not ax ; ax = 0xFFFF
+    mov ds, ax
+
+    mov di, 0x0500
+    mov si, 0x0510
+
+    mov al, byte [es:di]
+    push ax
+
+    mov al, byte [ds:si]
+    push ax
+
+    mov byte [es:di], 0x00
+    mov byte [ds:si], 0xFF
+
+    cmp byte [es:di], 0xFF
+
+    pop ax
+    mov byte [ds:si], al
+
+    pop ax
+    mov byte [es:di], al
+
+    mov ax, 0
+    je .check_a20__exit
+
+    mov ax, 1
+
+.check_a20__exit:
+    pop si
+    pop di
+    pop es
+    pop ds
+    popf
+
+    ret
+.end
+
+align               0x100, db 0
+
+enable_A20:
+    [bits 16]
+        cli
+
+        call    a20wait
+        mov     al,0xAD
+        out     0x64,al
+
+        call    a20wait
+        mov     al,0xD0
+        out     0x64,al
+
+        call    a20wait2
+        in      al,0x60
+        push    eax
+
+        call    a20wait
+        mov     al,0xD1
+        out     0x64,al
+
+        call    a20wait
+        pop     eax
+        or      al,2
+        out     0x60,al
+
+        call    a20wait
+        mov     al,0xAE
+        out     0x64,al
+
+        call    a20wait
+        sti
+        ret
+
+a20wait:
+        in      al,0x64
+        test    al,2
+        jnz     a20wait
+        ret
+
+
+a20wait2:
+        in      al,0x64
+        test    al,1
+        jz      a20wait2
+        ret
+.end
+
+align               0x100, db 0
+[bits 32]
+trampStart_32:
+    mov     eax, ADDRESS_TRAMP_32CODE
+    call    eax
+
+trampolineEnd:
+times LOW_MEMORY_LENGTH - ( trampolineEnd - LowGdtBase ) db 'Z'
+

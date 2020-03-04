@@ -1,0 +1,5078 @@
+
+===================================cpu_info.c===================================
+#include "driver.h"
+#include "setup_files.h"
+#include "cpu_info.h"
+
+#ifdef ALLOC_PRAGMA
+#pragma alloc_text(PAGE,CpuInfoPopFileContent)
+#pragma alloc_text(PAGE,CpuInfoFormatFileContent)
+#endif
+
+_Use_decl_annotations_
+NTSTATUS
+(__stdcall CpuInfoPopFileContent) (
+    _Out_       PVOID           BufferToFill,
+    _In_        DWORD           BufferSize,
+    _In_opt_    PVOID           Context
+    )
+{
+    PCPU_INFO pCpuInfo;
+
+    PAGED_CODE();
+
+#ifndef DBG
+    UNREFERENCED_PARAMETER(BufferSize);
+#endif
+    UNREFERENCED_PARAMETER(Context);
+
+    NT_ASSERT(NULL != BufferToFill);
+    NT_ASSERT(CPUINFO_FIXED_BUFFER_SIZE == BufferSize);
+
+    pCpuInfo = (PCPU_INFO)BufferToFill;
+    pCpuInfo->NumberOfProcessors = KeQueryActiveProcessorCount(NULL);
+
+
+    return STATUS_SUCCESS;
+}
+
+_Use_decl_annotations_
+NTSTATUS
+(__stdcall CpuInfoFormatFileContent) (
+    PVOID           BufferToFormat,
+    DWORD           BufferSize,
+    PCHAR           FormatedBuffer,
+    DWORD           FormatedBufferSize
+    )
+{
+    NTSTATUS status;
+    PCPU_INFO pCpuInfo;
+
+    PAGED_CODE();
+
+#ifndef DBG
+    UNREFERENCED_PARAMETER(BufferSize);
+#endif
+
+    NT_ASSERT(CPUINFO_FIXED_BUFFER_SIZE == BufferSize);
+    NT_ASSERT(CPUINFO_FORMAT_BUFFER_SIZE <= FormatedBufferSize);
+
+    status = STATUS_SUCCESS;
+    pCpuInfo = (PCPU_INFO)BufferToFormat;
+
+    status = RtlStringCbPrintfA(FormatedBuffer, FormatedBufferSize, "Number of processors: %u", pCpuInfo->NumberOfProcessors);
+    if (!NT_SUCCESS(status))
+    {
+        LOG_FUNC_ERROR("RtlStringCbPrintfA", status);
+        return status;
+    }
+
+    return status;
+}
+===================================cpu_info.h===================================
+#pragma once
+
+typedef struct _CPUINFO
+{
+    DWORD               NumberOfProcessors;
+} CPUINFO, *PCPU_INFO;
+
+#define CPUINFO_FILE_NAME                           L"cpuinfo"
+#define CPUINFO_FIXED_BUFFER_SIZE                  (sizeof(CPUINFO))
+#define CPUINFO_FORMAT_BUFFER_SIZE                  0x40
+
+FUNC_PopulateFileContent        CpuInfoPopFileContent;
+
+FUNC_FormatFileContent          CpuInfoFormatFileContent;
+====================================driver.c====================================
+#include "driver.h"
+#include "operation.h"
+#include "imports.h"
+#include "file_structure.h"
+#include "proc.h"
+#include "thread.h"
+#include "fs_ops.h"
+#include "lookaside_list.h"
+
+typedef struct _FILTER_DRV_DATA
+{
+    PFLT_FILTER         Filter;
+
+    PFLT_INSTANCE       ProcInstance;
+    HANDLE              ProcRoot;
+    KEVENT              UnloadEvent;
+} FILTER_DRV_DATA, *PFILTER_DRV_DATA;
+
+FILTER_DRV_DATA gFilterData;
+
+DRIVER_INITIALIZE DriverEntry;
+
+NTSTATUS
+DrvUnload(
+    FLT_FILTER_UNLOAD_FLAGS Flags
+    );
+
+NTSTATUS
+InstanceSetupCallback(
+    _In_ PCFLT_RELATED_OBJECTS    FltObjects,
+    _In_ FLT_INSTANCE_SETUP_FLAGS Flags,
+    _In_ DEVICE_TYPE              VolumeDeviceType,
+    _In_ FLT_FILESYSTEM_TYPE      VolumeFilesystemType
+    );
+
+const FLT_CONTEXT_REGISTRATION ContextRegistration[] =
+{
+    {
+        FLT_CONTEXT_END
+    }
+};
+
+const FLT_OPERATION_REGISTRATION OperationRegistration[] =
+{
+    {
+        IRP_MJ_CREATE,
+        0,
+        FltPreCreateOperation,
+        NULL,
+        NULL
+    },
+
+    {
+        IRP_MJ_OPERATION_END
+    }
+};
+
+FLT_REGISTRATION FilterRegistration =
+{
+    sizeof(FLT_REGISTRATION),		// Size
+    FLT_REGISTRATION_VERSION,		// Version
+    0,								// Flags
+    ContextRegistration,			// ContextRegistration
+    OperationRegistration,			// OperationRegistration
+    DrvUnload,				        // FilterUnloadCallback
+    InstanceSetupCallback,			// InstanceSetupCallback
+    NULL,							// InstanceQueryTeardownCallback
+    NULL,							// InstanceTeardownStartCallback
+    NULL,							// InstanceTeardownCompleteCallback
+    NULL,							// GenerateFileNameCallback
+    NULL,							// NormalizeNameComponentCallback
+    NULL							// NormalizeContextCleanupCallback
+};
+
+#ifdef ALLOC_PRAGMA
+#pragma alloc_text(INIT,DriverEntry)
+#pragma alloc_text(PAGE,DrvUnload)
+#pragma alloc_text(PAGE,InstanceSetupCallback)
+#endif
+
+_Function_class_(DRIVER_INITIALIZE)
+_IRQL_requires_same_
+_IRQL_requires_(PASSIVE_LEVEL)
+NTSTATUS
+DriverEntry(
+    _In_ struct _DRIVER_OBJECT *DriverObject,
+    _In_ PUNICODE_STRING RegistryPath
+    )
+{
+    NTSTATUS status;
+
+    UNREFERENCED_PARAMETER(RegistryPath);
+
+    status = STATUS_SUCCESS;
+
+    LookasideListsPreinit();
+    ProcPreinit();
+    ThreadPreinit();
+    FileStructurePreinit();
+    KeInitializeEvent(&gFilterData.UnloadEvent, NotificationEvent, FALSE);
+
+    __try
+    {
+        status = ImportDynamicFunctions();
+        if (!NT_SUCCESS(status))
+        {
+            LOG_FUNC_ERROR("ImportFunctions", status);
+            __leave;
+        }
+
+        status = FltRegisterFilter(DriverObject,
+                                   &FilterRegistration,
+                                   &gFilterData.Filter
+                                   );
+        if (!NT_SUCCESS(status))
+        {
+            LOG_FUNC_ERROR("FltRegisterFilter", status);
+            __leave;
+        }
+
+        status = FltStartFiltering(gFilterData.Filter);
+        if (!NT_SUCCESS(status))
+        {
+            LOG_FUNC_ERROR("FltStartFiltering", status);
+            __leave;
+        }
+    }
+    __finally
+    {
+        if (!NT_SUCCESS(status))
+        {
+            DrvUnload(FLTFL_FILTER_UNLOAD_MANDATORY);
+        }
+    }
+
+    return status;
+}
+
+NTSTATUS
+DrvUnload(
+    FLT_FILTER_UNLOAD_FLAGS Flags
+    )
+{
+    NTSTATUS status;
+
+    PAGED_CODE();
+
+    UNREFERENCED_PARAMETER(Flags);
+
+    status = STATUS_SUCCESS;
+    
+    LOGL("About to set event at %p\n", &gFilterData.UnloadEvent);
+    KeSetEvent(&gFilterData.UnloadEvent, IO_NO_INCREMENT, FALSE);
+
+    // MANDATORY: ThreadUninit must happen before ProcUnit
+    ThreadUninit();
+
+    // MANDATORY: ProcUninit must happen before FileStructureUnit
+    ProcUninit();
+
+    FileStructureUninit();
+
+#ifdef DBG
+    LookasideListDumpAllocationInformation();
+#endif
+
+    // these must be uninitialized after all memory allocations done from
+    // lookaside list are freed
+    LookasideListsUninit();
+
+    // close root directory
+    if (NULL != gFilterData.ProcRoot)
+    {
+        FltClose(gFilterData.ProcRoot);
+        gFilterData.ProcRoot = NULL;
+    }
+
+    // unregister filter
+    if (NULL != gFilterData.Filter)
+    {
+        FltUnregisterFilter(gFilterData.Filter);
+        gFilterData.Filter = NULL;
+    }
+
+    return status;
+}
+
+NTSTATUS
+InstanceSetupCallback(
+    _In_ PCFLT_RELATED_OBJECTS    FltObjects,
+    _In_ FLT_INSTANCE_SETUP_FLAGS Flags,
+    _In_ DEVICE_TYPE              VolumeDeviceType,
+    _In_ FLT_FILESYSTEM_TYPE      VolumeFilesystemType
+    )
+{
+    NTSTATUS status;
+    NTSTATUS result;
+    DISK_GEOMETRY diskGeometry;
+    PDEVICE_OBJECT devObject;
+    PIRP irp;
+    KEVENT event;
+    IO_STATUS_BLOCK iosb;
+    BOOLEAN foundProcDevice;
+
+    PAGED_CODE();
+
+    UNREFERENCED_PARAMETER(Flags);
+    UNREFERENCED_PARAMETER(VolumeDeviceType);
+
+    status = STATUS_SUCCESS;
+    result = STATUS_FLT_DO_NOT_ATTACH;
+    RtlZeroMemory(&diskGeometry, sizeof(DISK_GEOMETRY));
+    devObject = NULL;
+    irp = NULL;
+    foundProcDevice = FALSE;
+    RtlZeroMemory(&event, sizeof(KEVENT));
+    RtlZeroMemory(&iosb, sizeof(IO_STATUS_BLOCK));
+
+    LOG_FSTART;
+
+    if (PROC_DEVICE_FILE_SYSTEM_USED != VolumeFilesystemType)
+    {
+        return STATUS_FLT_DO_NOT_ATTACH;
+    }
+
+    __try
+    {
+        // we get the device object which is managed by this volume
+        // because we need to send an IRP to it to determine the media type
+        // used
+        status = FltGetDiskDeviceObject(FltObjects->Volume, &devObject);
+        if (!NT_SUCCESS(status))
+        {
+            LOG_FUNC_ERROR("FltGetDiskDeviceObject", status);
+            __leave;
+        }
+
+        KeInitializeEvent(&event, NotificationEvent, FALSE);
+
+        irp = IoBuildDeviceIoControlRequest(IOCTL_DISK_GET_DRIVE_GEOMETRY,
+                                            devObject,
+                                            NULL,
+                                            0,
+                                            &diskGeometry,
+                                            sizeof(DISK_GEOMETRY),
+                                            FALSE,
+                                            &event,
+                                            &iosb
+                                            );
+        if (NULL == irp)
+        {
+            status = STATUS_UNSUCCESSFUL;
+            LOG_FUNC_ERROR("IoBuildDeviceIoControlRequest", status);
+            __leave;
+        }
+
+        status = IoCallDriver(devObject, irp);
+        if (!NT_SUCCESS(status))
+        {
+            LOG_FUNC_ERROR("IoCallDriver", status);
+            __leave;
+        }
+
+        if (STATUS_PENDING == status)
+        {
+            status = KeWaitForSingleObject(&event, Executive, KernelMode, FALSE, NULL);
+            if (STATUS_WAIT_0 != status)
+            {
+                NT_ASSERT(!NT_SUCCESS(status));
+                LOG_FUNC_ERROR("KeWaitForSingleObject", status);
+                __leave;
+            }
+        }
+
+        LOGL("Media Type: 0x%X\n", diskGeometry.MediaType);
+
+        if (PROC_DEVICE_MEDIA_TYPE != diskGeometry.MediaType)
+        {
+            status = STATUS_DEVICE_CONFIGURATION_ERROR;
+            __leave;
+        }
+
+        // found the device to which we want to attach :)
+        // now, if we fail from this point forward we should unload
+        // the driver (i.e. there is nothing useful we could do)
+        foundProcDevice = TRUE;
+
+        // setup instance for Proc 'drive'
+        gFilterData.ProcInstance = FltObjects->Instance;
+
+        // open root directory
+        status = FsOpsOpenDirectory(L"\\??\\P:\\",
+                                    &gFilterData.ProcRoot);
+        if (!NT_SUCCESS(status))
+        {
+            LOG_FUNC_ERROR("FsOpsCreateDirectory", status);
+            __leave;
+        }
+
+        // This is the MANDATORY initialization order
+        // 1. LookasideLists
+        // 2. FileStructure
+        // 3. Proc
+        // 4. Thread
+        status = LookasideListsInit();
+        if (!NT_SUCCESS(status))
+        {
+            LOG_FUNC_ERROR("LookasideListsInit", status);
+            __leave;
+        }
+        
+        status = FileStructureInit();
+        if (!NT_SUCCESS(status))
+        {
+            LOG_FUNC_ERROR("FileStructureInit", status);
+            __leave;
+        }
+
+        status = ProcInit();
+        if (!NT_SUCCESS(status))
+        {
+            LOG_FUNC_ERROR("ProcInit", status);
+            __leave;
+        }
+
+        status = ThreadInit();
+        if (!NT_SUCCESS(status))
+        {
+            LOG_FUNC_ERROR("ThreadInit", status);
+            __leave;
+        }
+    }
+    __finally
+    {
+        if (!NT_SUCCESS(status))
+        {
+            result = STATUS_FLT_DO_NOT_ATTACH;
+
+            NT_ASSERT(!foundProcDevice);
+
+            if (foundProcDevice)
+            {
+                // TODO: Find a method to unload the driver
+                // Suggestions:
+                // 1. Send a UM message to be unloaded
+            }
+        }
+        else
+        {
+            result = STATUS_SUCCESS;
+        }
+
+        LOG_FEND_STATUS(status);
+    }
+
+    return result;
+}
+
+PFLT_FILTER
+DrvGetFilter(
+    void
+    )
+{
+    return gFilterData.Filter;
+}
+
+PFLT_INSTANCE
+DrvGetProcInstance(
+    void
+    )
+{
+    return gFilterData.ProcInstance;
+}
+
+HANDLE
+DrvGetProcRootDirectory(
+    void
+    )
+{
+    return gFilterData.ProcRoot;
+}
+
+PKEVENT
+DrvGetUnloadEvent(
+    void
+    )
+{
+    return &gFilterData.UnloadEvent;
+}
+====================================driver.h====================================
+#pragma once
+
+#include <fltKernel.h>
+#include <ntstrsafe.h>
+#include <ntdddisk.h>
+
+#include "log.h"
+#include "sal_interface.h"
+#include "mem_tags.h"
+#include "defs.h"
+#include "ref_cnt.h"
+
+#ifndef QWORD
+typedef unsigned __int64    QWORD, *PQWORD;
+#endif
+
+PFLT_FILTER
+DrvGetFilter(
+    void
+    );
+
+PFLT_INSTANCE   
+DrvGetProcInstance(
+    void
+    );
+
+HANDLE 
+DrvGetProcRootDirectory(
+    void
+    );
+
+PKEVENT
+DrvGetUnloadEvent(
+    void
+    );
+==================================file_entry.c==================================
+#include "driver.h"
+
+#include "file_structure.h"
+#include "fs_ops.h"
+#include "proc_info.h"
+
+SAL_SUCCESS
+static
+NTSTATUS
+_FileEntryDeallocateFileData(
+    _In_        RTL_AVL_TABLE*      Table,
+    _In_        PFILE_ENTRY         Entry
+    );
+
+#ifdef ALLOC_PRAGMA
+#pragma alloc_text(PAGE,FileEntryCompare)
+#pragma alloc_text(PAGE,FileEntryAllocate)
+#pragma alloc_text(PAGE,FileEntryFree)
+#pragma alloc_text(PAGE,FileEntryInsertFileIntoTable)
+#pragma alloc_text(PAGE,FileEntryLookupFileFromTable)
+#pragma alloc_text(PAGE,_FileEntryDeallocateFileData)
+#pragma alloc_text(PAGE,FileEntryDereference)
+#pragma alloc_text(PAGE,FileEntryFreeRoutine)
+#endif
+
+RTL_GENERIC_COMPARE_RESULTS
+FileEntryCompare(
+    __in struct _RTL_AVL_TABLE  *Table,
+    __in PVOID  FirstStruct,
+    __in PVOID  SecondStruct
+    )
+{
+    PFILE_ENTRY pFirstStruct = (PFILE_ENTRY)FirstStruct;
+    PFILE_ENTRY pSecondStruct = (PFILE_ENTRY)SecondStruct;
+    int compareResult = 0;
+
+    PAGED_CODE();
+
+    UNREFERENCED_PARAMETER(Table);
+
+    compareResult = _wcsicmp(pFirstStruct->FileName, pSecondStruct->FileName);
+
+    if (0 > compareResult)
+    {
+        return GenericLessThan;
+    }
+    else if (0 < compareResult)
+    {
+        return GenericGreaterThan;
+    }
+    else
+    {
+        return GenericEqual;
+    }
+}
+
+PVOID
+FileEntryAllocate(
+    __in struct _RTL_AVL_TABLE  *Table,
+    __in CLONG  ByteSize
+    )
+{
+    PFILE_ENTRY pResult;
+
+    PAGED_CODE();
+
+    UNREFERENCED_PARAMETER(Table);
+    pResult = NULL;
+
+    pResult = ExAllocatePoolWithTag(PagedPool, ByteSize, MEM_TAG_FILE_ENTRY);
+    if (NULL == pResult)
+    {
+        LOG_ALLOC_ERROR("ExAllocatePoolWithTag", ByteSize);
+        return pResult;
+    }
+
+    return pResult;
+}
+
+
+_IRQL_requires_same_
+_Function_class_(RTL_AVL_FREE_ROUTINE)
+VOID
+NTAPI
+FileEntryFree(
+    _In_ struct _RTL_AVL_TABLE *Table,
+    _In_ __drv_freesMem(Mem) _Post_invalid_ PVOID Buffer
+    )
+{
+    PAGED_CODE();
+
+    UNREFERENCED_PARAMETER(Table);
+
+    ExFreePoolWithTag(Buffer, MEM_TAG_FILE_ENTRY);
+}
+
+// the corresponding file will be created on disk
+PTR_SUCCESS
+PVOID
+FileEntryInsertFileIntoTable(
+    _In_        RTL_AVL_TABLE*      Table,
+    _In_        PFILE_ENTRY         Entry
+    )
+{
+    NTSTATUS status;
+    PFILE_ENTRY pEntry;
+    BOOLEAN newElement;
+    HANDLE rootDir;
+
+    PAGED_CODE();
+
+    pEntry = NULL;
+    newElement = FALSE;
+    status = STATUS_SUCCESS;
+    rootDir = DrvGetProcRootDirectory();
+
+    // in case of file entries they cannot be added simultaneously by
+    // multiple threads => newElement should always be TRUE
+    pEntry = RtlInsertElementGenericTableAvl(Table,
+                                             Entry,
+                                             sizeof(FILE_ENTRY),
+                                             &newElement);
+    NT_ASSERT(newElement);
+
+    __try
+    {
+        NT_ASSERT(NULL == pEntry->FileHandle);
+        NT_ASSERT(NULL == pEntry->FileObject);
+
+        status = FsOpsCreateFile(pEntry->FileName,
+                                 rootDir,
+                                 &pEntry->FileHandle,
+                                 &pEntry->FileObject);
+        if (!NT_SUCCESS(status))
+        {
+            LOG_FUNC_ERROR("FsOpsCreateFile", status);
+            __leave;
+        }
+    }
+    __finally
+    {
+        NTSTATUS statusSup;
+
+        if (!NT_SUCCESS(status))
+        {
+            statusSup = FileEntryDereference(pEntry);
+            if (!NT_SUCCESS(statusSup))
+            {
+                LOG_FUNC_ERROR("FileEntryRemoveFileFromTable", statusSup);
+            }
+
+            pEntry = NULL;
+        }
+    }
+
+    return pEntry;
+}
+
+PTR_SUCCESS
+PFILE_ENTRY
+FileEntryLookupFileFromTable(
+    _In_        RTL_AVL_TABLE*      Table,
+    _In_        PWCHAR              FileName
+    )
+{
+    PFILE_ENTRY pFileEntry;
+    PFILE_ENTRY pResult;
+
+    PAGED_CODE();
+
+    pResult = NULL;
+    pFileEntry = (PFILE_ENTRY)&FileName;
+
+    pResult = RtlLookupElementGenericTableAvl(Table,
+                                              pFileEntry);
+
+    return pResult;
+}
+
+SAL_SUCCESS
+NTSTATUS
+_FileEntryDeallocateFileData(
+    _In_        RTL_AVL_TABLE*      Table,
+    _In_        PFILE_ENTRY         Entry
+    )
+{
+    NTSTATUS status;
+    PWCHAR pFileName;
+
+    PAGED_CODE();
+
+    status = STATUS_SUCCESS;
+    pFileName = NULL;
+
+    if (Entry->InsertIntoUpdateList)
+    {
+        NT_ASSERT(NULL != Entry->DeallocationEvent);
+        NT_ASSERT(NULL != Entry->CanDeallocate);
+
+        // this is only set on debug to make sure the deallocation event has already
+        // been signaled in the UninitializeFileEntry routine
+        NT_ASSERT(0 != KeSetEvent(Entry->DeallocationEvent, IO_NO_INCREMENT, TRUE));
+        status = KeWaitForSingleObject(Entry->CanDeallocate,
+                                       Executive,
+                                       KernelMode,
+                                       FALSE,
+                                       NULL);
+        if (STATUS_WAIT_0 != status)
+        {
+            LOG_FUNC_ERROR("KeWaitForSingleObject", status);
+            return status;
+        }
+
+        FileStructureAcquireUpdateListLock(TRUE);
+        RemoveEntryList(&Entry->UpdateListEntry);
+        FileStructureReleaseUpdateListLock();
+
+        ExFreePoolWithTag(Entry->DeallocationEvent, MEM_TAG_FILE_ENTRY);
+        Entry->DeallocationEvent = NULL;
+
+        ExFreePoolWithTag(Entry->CanDeallocate, MEM_TAG_FILE_ENTRY);
+        Entry->CanDeallocate = NULL;
+    }
+
+    // dereference the file object
+    if (NULL != Entry->FileObject)
+    {
+        ObDereferenceObject(Entry->FileObject);
+        Entry->FileObject = NULL;
+    }
+
+    // close the file
+    if (NULL != Entry->FileHandle)
+    {
+        status = FltClose(Entry->FileHandle);
+        if (!NT_SUCCESS(status))
+        {
+            LOG_FUNC_ERROR("FltClose", status);
+            return status;
+        }
+
+        Entry->FileHandle = NULL;
+    }
+
+    if (Entry->MustFreeFileName)
+    {
+        pFileName = Entry->FileName;
+    }
+
+    if (NULL != Entry->PopulateFileContext)
+    {
+        if (NULL != Entry->PopulateFileContextFreeFunction)
+        {
+            Entry->PopulateFileContextFreeFunction(Entry->PopulateFileContext, NULL);
+        }
+    }
+
+    if (!RtlDeleteElementGenericTableAvl(Table,
+                                         Entry))
+    {
+        LOGL("RtlDeleteElementGenericTableAvl failed\n");
+        return STATUS_UNSUCCESSFUL;
+    }
+
+    if (NULL != pFileName)
+    {
+        ExFreePoolWithTag(pFileName, MEM_TAG_FILE_ENTRY);
+        pFileName = NULL;
+    }
+
+    return status;
+}
+
+SIZE_SUCCESS
+DWORD
+FileEntryDereference(
+    _Inout_     PFILE_ENTRY         Entry
+    )
+{
+    PAGED_CODE();
+
+    return RfcDereference(&Entry->RefCnt);
+}
+
+void
+(_stdcall FileEntryFreeRoutine)(
+    IN          PVOID       Object,
+    _In_opt_    PVOID       Context
+    )
+{
+    PFILE_ENTRY pFileEntry;
+    PRTL_AVL_TABLE pTable;
+    NTSTATUS status;
+
+    PAGED_CODE();
+
+    NT_ASSERT(NULL != Object);
+    NT_ASSERT(NULL != Context);
+
+    __analysis_assume(NULL != Context);
+
+    status = STATUS_SUCCESS;
+    pFileEntry = CONTAINING_RECORD(Object, FILE_ENTRY, RefCnt);
+    pTable = (PRTL_AVL_TABLE)Context;
+
+    status = _FileEntryDeallocateFileData(pTable, pFileEntry);
+    if (!NT_SUCCESS(status))
+    {
+        LOG_FUNC_ERROR("FileEntryDeallocateFileData", status);
+    }
+
+    NT_ASSERT(NT_SUCCESS(status));
+}
+==================================file_entry.h==================================
+#pragma once
+
+/*
+/// FOR UM part:
+
+/// Instead of APC use CreateRemoteThread in each process to query
+/// their information. Each should have a unique event to know that
+/// a message must be sent to the filter manager
+
+/// PRO: more efficient then an APC
+/// CON: may change stats :(
+
+*/
+
+typedef
+SAL_SUCCESS
+NTSTATUS
+(__stdcall FUNC_PopulateFileContent) (
+    _Out_       PVOID           BufferToFill,
+    _In_        DWORD           BufferSize,
+    _In_opt_    PVOID           Context
+    );
+
+typedef FUNC_PopulateFileContent*           PFUNC_PopulateFileContent;
+
+typedef
+SAL_SUCCESS
+NTSTATUS
+(__stdcall FUNC_FormatFileContent) (
+    _In_                                PVOID           BufferToFormat,
+    _In_                                DWORD           BufferSize,
+    _Out_writes_(FormatedBufferSize)    PCHAR           FormatedBuffer,
+    _In_                                DWORD          FormatedBufferSize
+    );
+
+typedef FUNC_FormatFileContent*             PFUNC_FormatFileContent;
+
+typedef struct _FILE_ENTRY
+{
+    PWCHAR                          FileName;
+
+    // if set the FileName buffer must be freed on cleanup
+    BOOLEAN                         MustFreeFileName;
+
+    HANDLE                          FileHandle;
+    PFILE_OBJECT                    FileObject;
+
+    REF_COUNT                       RefCnt;
+
+    PFUNC_PopulateFileContent       PopulateFileFunction;
+    PVOID                           PopulateFileContext;
+    PFUNC_FreeFunction              PopulateFileContextFreeFunction;
+    DWORD                           PopulateBufferSize;
+    DWORD                           PopulateLookasideListIndex;
+
+    PFUNC_FormatFileContent         FormatFileFunction;
+    DWORD                           FormatBufferSize;     
+    DWORD                           FormatLookasideListIndex;
+
+    // these fields could be moved in a seperate structure
+    BOOLEAN                         InsertIntoUpdateList;
+    PKEVENT                         DeallocationEvent;
+    PKEVENT                         CanDeallocate;
+    LIST_ENTRY                      UpdateListEntry;
+    LARGE_INTEGER                   NextUpdate;
+} FILE_ENTRY, *PFILE_ENTRY;
+
+// Do not call them directly
+// only used by the AVL table
+RTL_AVL_COMPARE_ROUTINE             FileEntryCompare;
+RTL_AVL_ALLOCATE_ROUTINE            FileEntryAllocate;
+RTL_AVL_FREE_ROUTINE                FileEntryFree;
+
+// Used for insertion
+PTR_SUCCESS
+PVOID
+FileEntryInsertFileIntoTable(
+    _In_        RTL_AVL_TABLE*      Table,
+    _In_        PFILE_ENTRY         Entry
+    );
+
+// Used for search
+PTR_SUCCESS
+PFILE_ENTRY
+FileEntryLookupFileFromTable(
+    _In_        RTL_AVL_TABLE*      Table,
+    _In_        PWCHAR              FileName
+    );
+
+// Used for deletion (dereference)
+SIZE_SUCCESS
+DWORD
+FileEntryDereference(
+    _Inout_     PFILE_ENTRY         Entry
+    );
+
+FUNC_FreeFunction                   FileEntryFreeRoutine;
+================================file_structure.c================================
+#include "driver.h"
+#include "file_structure.h"
+#include "file_updater.h"
+#include "lookaside_list.h"
+
+#define  NO_OF_WORKER_THREADS_TO_CREATE         2
+
+typedef struct _FILE_DATA
+{
+    _Guarded_by_(FileTableLock)
+    RTL_AVL_TABLE           FileTable;
+    EX_PUSH_LOCK            FileTableLock;
+
+    PVOID                   WorkerThreads[NO_OF_WORKER_THREADS_TO_CREATE];
+
+    _Guarded_by_(UpdateListLock)
+    LIST_ENTRY              UpdateList;
+    EX_PUSH_LOCK            UpdateListLock;
+} FILE_DATA, *PFILE_DATA;
+
+static FILE_DATA            gFileData;
+
+#ifdef ALLOC_PRAGMA
+#pragma alloc_text(PAGE,FileStructurePreinit)
+#pragma alloc_text(PAGE,FileStructureInit)
+#pragma alloc_text(PAGE,FileStructureUninit)
+
+#pragma alloc_text(PAGE,FileStructureInitializeFileEntry)
+#pragma alloc_text(PAGE,FileStructureUninitializeFileEntry)
+
+#pragma alloc_text(PAGE,FileStructureRequestFixedBuffer)
+#pragma alloc_text(PAGE,FileStructureRequestDynamicBuffer)
+#pragma alloc_text(PAGE,FileStructureFreeBuffers)
+
+#pragma alloc_text(PAGE,FileStructureAcquireFileTableLock)
+#pragma alloc_text(PAGE,FileStructureReleaseFileTableLock)
+
+#pragma alloc_text(PAGE,FileStructureAcquireUpdateListLock)
+#pragma alloc_text(PAGE,FileStructureReleaseUpdateListLock)
+#endif
+
+_No_competing_thread_
+void
+FileStructurePreinit(
+    void
+    )
+{
+    PAGED_CODE();
+
+    RtlZeroMemory(&gFileData, sizeof(FILE_DATA));
+
+    RtlInitializeGenericTableAvl(&gFileData.FileTable,
+                                 FileEntryCompare,
+                                 FileEntryAllocate,
+                                 FileEntryFree,
+                                 NULL
+                                 );
+
+    FltInitializePushLock(&gFileData.FileTableLock);
+
+    InitializeListHead(&gFileData.UpdateList);
+    FltInitializePushLock(&gFileData.UpdateListLock);
+}
+
+_No_competing_thread_
+SAL_SUCCESS
+NTSTATUS
+FileStructureInit(
+    void
+    )
+{
+    NTSTATUS status;
+    DWORD i;
+    HANDLE hThreadHandle;
+    PUPDATE_WORKER_CONTEXT pWorkerContext;
+
+    PAGED_CODE();
+
+    status = STATUS_SUCCESS;
+    hThreadHandle = NULL;
+    pWorkerContext = NULL;
+
+    __try
+    {
+        // setup files corresponding to the root directory
+        status = SetupFiles();
+        if (!NT_SUCCESS(status))
+        {
+            LOG_FUNC_ERROR("SetupFiles", status);
+            __leave;
+        }
+
+        // we will create the worker threads
+        for (i = 0; i < NO_OF_WORKER_THREADS_TO_CREATE; ++i)
+        {
+            pWorkerContext = ExAllocatePoolWithTag(PagedPool, sizeof(UPDATE_WORKER_CONTEXT), MEM_TAG_WORKER_THREAD);
+            if (NULL == pWorkerContext)
+            {
+                status = STATUS_INSUFFICIENT_RESOURCES;
+                LOG_ALLOC_ERROR("ExAllocatePoolWithTag", sizeof(UPDATE_WORKER_CONTEXT));
+                __leave;
+            }
+
+            RtlZeroMemory(pWorkerContext, sizeof(UPDATE_WORKER_CONTEXT));
+            pWorkerContext->UpdateList = &gFileData.UpdateList;
+            pWorkerContext->UnloadEvent = DrvGetUnloadEvent();
+
+            status = PsCreateSystemThread(&hThreadHandle,
+                                          SYNCHRONIZE,
+                                          NULL,
+                                          NULL,
+                                          NULL,
+                                          FileUpdaterWorkerThread,
+                                          pWorkerContext
+                                          );
+            if (!NT_SUCCESS(status))
+            {
+                LOG_FUNC_ERROR("PsCreateSystemThread", status);
+                __leave;
+            }
+            pWorkerContext = NULL;
+            
+            // we will need a pointer to the thread object, else we cannot
+            // use it for KeWait* operations
+            status = ObReferenceObjectByHandle(hThreadHandle,
+                                               SYNCHRONIZE,
+                                               *PsThreadType,
+                                               KernelMode,
+                                               &gFileData.WorkerThreads[i],
+                                               NULL
+                                               );
+            if (!NT_SUCCESS(status))
+            {
+                LOG_FUNC_ERROR("ObReferenceObjectByHandle", status);
+                __leave;
+            }
+
+            // we no longer need to keep the handle open as we have already
+            // referenced the thread
+            status = ZwClose(hThreadHandle);
+            if (!NT_SUCCESS(status))
+            {
+                LOG_FUNC_ERROR("ZwClose", status);
+                __leave;
+            }
+
+            hThreadHandle = NULL;
+        }
+    }
+    __finally
+    {
+        if (!NT_SUCCESS(status))
+        {
+            NTSTATUS statusSup;
+
+            if (NULL != hThreadHandle)
+            {
+                statusSup = ZwClose(hThreadHandle);
+                if (!NT_SUCCESS(statusSup))
+                {
+                    LOG_FUNC_ERROR("ZwClose", statusSup);
+                }
+
+                hThreadHandle = NULL;
+            }
+
+            if (NULL != pWorkerContext)
+            {
+                ExFreePoolWithTag(pWorkerContext, MEM_TAG_WORKER_THREAD);
+                pWorkerContext = NULL;
+            }
+
+            FileStructureUninit();
+        }
+
+        NT_ASSERT(NULL == hThreadHandle);
+        NT_ASSERT(NULL == pWorkerContext);
+    }
+
+    return status;
+}
+
+_No_competing_thread_
+void
+FileStructureUninit(
+    void
+    )
+{
+    NTSTATUS status;
+    PFILE_ENTRY pEntry;
+    DWORD i;
+    PLIST_ENTRY pListEntry;
+
+    PAGED_CODE();
+
+    status = STATUS_SUCCESS;
+    pEntry = NULL;
+    pListEntry = NULL;
+
+    // wait for the worker threads to finish and dereference their pointers
+    for (i = 0; i < NO_OF_WORKER_THREADS_TO_CREATE; ++i)
+    {
+        if (NULL != gFileData.WorkerThreads[i])
+        {
+            status = KeWaitForSingleObject(gFileData.WorkerThreads[i],
+                                           Executive,
+                                           KernelMode,
+                                           FALSE,
+                                           NULL
+                                           );
+            if (!NT_SUCCESS(status))
+            {
+                LOG_FUNC_ERROR("KeWaitForSingleObject", status);
+            }
+
+            ObDereferenceObject(gFileData.WorkerThreads[i]);
+            gFileData.WorkerThreads[i] = NULL;
+        }
+    }
+
+    while (NULL != (pEntry = RtlGetElementGenericTableAvl(&gFileData.FileTable, 0)))
+    {
+        status = FileStructureUninitializeFileEntry(pEntry->FileName);
+        if (!NT_SUCCESS(status))
+        {
+            LOG_FUNC_ERROR("UninitializeFileEntry", status);
+        }
+    }
+
+    FileStructurePreinit();
+}
+
+SAL_SUCCESS
+NTSTATUS
+FileStructureInitializeFileEntry(
+    IN      SETUP_FILE_ENTRY const*     SetupFileEntry,
+    IN      BOOLEAN                     UseLocking
+    )
+{
+    NTSTATUS status;
+    FILE_ENTRY fileEntry;
+    PFILE_ENTRY pEntry;
+    BOOLEAN lockTaken;
+
+    PAGED_CODE();
+
+    lockTaken = FALSE;
+    pEntry = NULL;
+    status = STATUS_SUCCESS;
+    RtlZeroMemory(&fileEntry, sizeof(FILE_ENTRY));
+
+    RfcPreInit(&fileEntry.RefCnt);
+
+    RfcInit(&fileEntry.RefCnt, FileEntryFreeRoutine, &gFileData.FileTable);
+
+    fileEntry.FileName = SetupFileEntry->FileName;
+    fileEntry.InsertIntoUpdateList = SetupFileEntry->InsertIntoUpdateList;
+    fileEntry.MustFreeFileName = SetupFileEntry->MustFreeFileName;
+
+    fileEntry.PopulateFileFunction = SetupFileEntry->PopulateFileContent;
+    fileEntry.PopulateFileContext = SetupFileEntry->PopulateFileContentContext;
+    fileEntry.PopulateFileContextFreeFunction = SetupFileEntry->PopulateFileContentContextFreeFunction;
+    fileEntry.PopulateBufferSize = SetupFileEntry->PopulateBufferSize;
+    fileEntry.PopulateLookasideListIndex = LookasideListRetrieveAppropiateListIndex(SetupFileEntry->PopulateBufferSize);
+    NT_ASSERT(INVALID_LIST_INDEX != fileEntry.PopulateLookasideListIndex);
+
+    fileEntry.FormatFileFunction = SetupFileEntry->FormatFileContent;
+    fileEntry.FormatBufferSize = SetupFileEntry->FormatBufferSize;
+    fileEntry.FormatLookasideListIndex = LookasideListRetrieveAppropiateListIndex(SetupFileEntry->FormatBufferSize);
+    NT_ASSERT(INVALID_LIST_INDEX != fileEntry.FormatLookasideListIndex);
+
+    if (UseLocking)
+    {
+        FileStructureAcquireFileTableLock(TRUE);
+
+        lockTaken = TRUE;
+    }
+
+    __try
+    {
+        pEntry = FileEntryInsertFileIntoTable(&gFileData.FileTable, &fileEntry);
+        if (NULL == pEntry)
+        {
+            LOGL("FileEntryInsertFileIntoTable failed\n");
+            status = STATUS_INSUFFICIENT_RESOURCES;
+            __leave;
+        }
+
+        if (pEntry->InsertIntoUpdateList)
+        {
+            // we will want an update ASAP
+            pEntry->NextUpdate.QuadPart = 0;
+
+            pEntry->DeallocationEvent = ExAllocatePoolWithTag(NonPagedPoolNx, sizeof(KEVENT), MEM_TAG_FILE_ENTRY);
+            if (NULL == pEntry->DeallocationEvent)
+            {
+                status = STATUS_INSUFFICIENT_RESOURCES;
+                LOG_ALLOC_ERROR("ExAllocatePoolWithTag", sizeof(KEVENT));
+                __leave;
+            }
+
+            KeInitializeEvent(pEntry->DeallocationEvent, NotificationEvent, FALSE);
+
+            pEntry->CanDeallocate = ExAllocatePoolWithTag(NonPagedPoolNx, sizeof(KEVENT), MEM_TAG_FILE_ENTRY);
+            if (NULL == pEntry->CanDeallocate)
+            {
+                status = STATUS_INSUFFICIENT_RESOURCES;
+                LOG_ALLOC_ERROR("ExAllocatePoolWithTag", sizeof(KEVENT));
+                __leave;
+            }
+
+            KeInitializeEvent(pEntry->CanDeallocate, NotificationEvent, TRUE);
+
+            FileStructureAcquireUpdateListLock(TRUE);
+            // insert to the head of the list
+            InsertHeadList(&gFileData.UpdateList, &pEntry->UpdateListEntry);
+            FileStructureReleaseUpdateListLock();
+        }
+
+        if (lockTaken)
+        {
+            FileStructureReleaseFileTableLock();
+            lockTaken = FALSE;
+        }
+    }
+    __finally
+    {
+        if (!NT_SUCCESS(status))
+        {
+            if (NULL != pEntry)
+            {
+                if (!lockTaken)
+                {
+                    FileStructureAcquireFileTableLock(TRUE);
+                    lockTaken = TRUE;
+                }
+
+                FileEntryDereference(pEntry);
+                pEntry = NULL;
+            }
+
+        }
+
+        if (lockTaken)
+        {
+            FileStructureReleaseFileTableLock();
+            lockTaken = FALSE;
+        }
+    }
+
+    return status;
+}
+
+SAL_SUCCESS
+NTSTATUS
+FileStructureUninitializeFileEntry(
+    IN      PWCHAR                 FileEntryName
+    )
+{
+    NTSTATUS status;
+    PFILE_ENTRY pFileEntry;
+
+    PAGED_CODE();
+
+    status = STATUS_SUCCESS;
+    pFileEntry = NULL;
+
+    FileStructureAcquireFileTableLock(TRUE);
+
+    __try
+    {
+        pFileEntry = FileEntryLookupFileFromTable(&gFileData.FileTable, FileEntryName);
+        if( NULL == pFileEntry)
+        {
+            status = STATUS_NOT_FOUND;
+            LOG_FUNC_ERROR("FileEntryLookupFileFromTable", status );
+            __leave;
+        }
+
+        KeSetEvent(pFileEntry->DeallocationEvent, IO_NO_INCREMENT, FALSE);
+
+        FileEntryDereference(pFileEntry);
+    }
+    __finally
+    {
+        FileStructureReleaseFileTableLock();
+    }
+
+    return status;
+}
+
+PTR_SUCCESS
+PVOID
+FileStructureRequestFixedBuffer(
+    IN      PFILE_ENTRY                 FileEntry
+    )
+{
+    PAGED_CODE();
+
+    return LookasideListAllocateFromLookasideList(FileEntry->PopulateLookasideListIndex
+#ifdef DBG
+                                                  ,FileEntry->PopulateBufferSize
+#endif
+                                                  );
+}
+
+PTR_SUCCESS
+PVOID
+FileStructureRequestDynamicBuffer(
+    IN      PFILE_ENTRY                 FileEntry,
+    IN      BOOLEAN                     LastAllocationFailed
+    )
+{
+    PAGED_CODE();
+
+    if (LastAllocationFailed)
+    {
+        DWORD allocationSizeForCurrentIndex = LookasideListRetrieveAllocationSizeForListIndex(FileEntry->FormatLookasideListIndex);
+
+        // we may be able to satisfy the buffer requirement without advancing to the next index
+        if (allocationSizeForCurrentIndex == FileEntry->FormatBufferSize)
+        {
+            FileEntry->FormatLookasideListIndex = LookasideListRequestLargerSizeAllocationListIndex(FileEntry->FormatLookasideListIndex);
+
+            allocationSizeForCurrentIndex = LookasideListRetrieveAllocationSizeForListIndex(FileEntry->FormatLookasideListIndex);
+        }
+
+        FileEntry->FormatBufferSize = allocationSizeForCurrentIndex;
+    }
+
+    return LookasideListAllocateFromLookasideList(FileEntry->FormatLookasideListIndex
+#ifdef DBG
+                                                  ,FileEntry->FormatBufferSize
+#endif
+                                                  );
+}
+
+void
+FileStructureFreeBuffers(
+    IN          PFILE_ENTRY                 FileEntry,
+    _In_opt_    PVOID                       FixedBuffer,
+    _In_opt_    PVOID                       DynamicBuffer
+    )
+{
+    PAGED_CODE();
+
+    NT_ASSERT(NULL != FileEntry);
+
+    if (NULL != FixedBuffer)
+    {
+        LookasideListFreeFromLookasideList(FileEntry->PopulateLookasideListIndex, FixedBuffer);
+    }
+
+    if (NULL != DynamicBuffer)
+    {
+        LookasideListFreeFromLookasideList(FileEntry->FormatLookasideListIndex, DynamicBuffer);
+    }
+}
+
+void
+FileStructureAcquireFileTableLock(
+    IN          BOOLEAN                     Exclusive
+    )
+{
+    PAGED_CODE();
+
+    if (Exclusive)
+    {
+        FltAcquirePushLockExclusive(&gFileData.FileTableLock);
+    }
+    else
+    {
+        FltAcquirePushLockShared(&gFileData.FileTableLock);
+    }
+}
+
+void
+FileStructureReleaseFileTableLock(
+    void
+    )
+{
+    PAGED_CODE();
+
+    FltReleasePushLock(&gFileData.FileTableLock);
+}
+
+void
+FileStructureAcquireUpdateListLock(
+    IN          BOOLEAN                     Exclusive
+    )
+{
+    PAGED_CODE();
+
+    if (Exclusive)
+    {
+        FltAcquirePushLockExclusive(&gFileData.UpdateListLock);
+    }
+    else
+    {
+        FltAcquirePushLockShared(&gFileData.UpdateListLock);
+    }
+}
+
+void
+FileStructureReleaseUpdateListLock(
+    void
+    )
+{
+    PAGED_CODE();
+
+    FltReleasePushLock(&gFileData.UpdateListLock);
+}
+================================file_structure.h================================
+#pragma once
+
+#include "file_entry.h"
+#include "setup_files.h"
+
+_No_competing_thread_
+void
+FileStructurePreinit(
+    void
+    );
+
+_No_competing_thread_
+SAL_SUCCESS
+NTSTATUS
+FileStructureInit(
+    void
+    );
+
+_No_competing_thread_
+void
+FileStructureUninit(
+    void
+    );
+
+// Initializes a FILE_ENTRY
+SAL_SUCCESS
+NTSTATUS
+FileStructureInitializeFileEntry(
+    IN      SETUP_FILE_ENTRY const*     SetupFileEntry,
+    IN      BOOLEAN                     UseLocking
+    );
+
+// Uninitializes a FILE_ENTRY
+SAL_SUCCESS
+NTSTATUS
+FileStructureUninitializeFileEntry(
+    IN     PWCHAR                       FileEntryName
+    );
+
+// returns the FIXED size buffer for the corresponding
+// FILE_ENTRY
+PTR_SUCCESS
+PVOID
+FileStructureRequestFixedBuffer(
+    IN      PFILE_ENTRY                 FileEntry
+    );
+
+// returns the DYNAMIC size buffer for the corresponding
+// FILE_ENTRY
+// if LastAllocationFailed => the buffer will be expanded
+PTR_SUCCESS
+PVOID
+FileStructureRequestDynamicBuffer(
+    IN      PFILE_ENTRY                 FileEntry,
+    IN      BOOLEAN                     LastAllocationFailed
+    );
+
+// Frees the FIXED and/or DYNAMIC buffers previously allocated
+void
+FileStructureFreeBuffers(
+    IN          PFILE_ENTRY             FileEntry,
+    _In_opt_    PVOID                   FixedBuffer,
+    _In_opt_    PVOID                   DynamicBuffer
+    );
+
+// Functions to acquire and release the file table lock
+void
+FileStructureAcquireFileTableLock(
+    IN          BOOLEAN                 Exclusive
+    );
+
+void
+FileStructureReleaseFileTableLock(
+    void
+    );
+
+// Functions to acquire and release the update list lock
+void
+FileStructureAcquireUpdateListLock(
+    IN          BOOLEAN                 Exclusive
+    );
+
+void
+FileStructureReleaseUpdateListLock(
+    void
+    );
+=================================file_updater.c=================================
+#include "driver.h"
+#include "file_structure.h"
+#include "fs_ops.h"
+#include "file_updater.h"
+
+#define ONE_US_IN_100NS                                         10
+#define ONE_MS_IN_100NS                                         (1000*ONE_US_IN_100NS)
+#define ONE_SEC_IN_100NS                                        (1000*ONE_MS_IN_100NS)
+
+#define WORKER_THREAD_DELAY_BETWEEN_UPDATES                     (1*ONE_SEC_IN_100NS)
+
+#define WORKER_THREAD_MAX_NO_OF_OBJECTS_TO_WAIT_FOR             2
+static_assert(WORKER_THREAD_MAX_NO_OF_OBJECTS_TO_WAIT_FOR <= THREAD_WAIT_OBJECTS, "Can't wait on more than THREAD_WAIT_OBJECTS objects");
+
+#define WORKER_THREAD_TIMEOUT   (-ONE_SEC_IN_100NS)
+
+SAL_SUCCESS
+static
+NTSTATUS
+_FileUpdaterUpdateInformationOnDisk(
+    _In_        PFILE_ENTRY         Entry
+    );
+
+__forceinline
+static
+void
+_FileUpdaterSignalDeallocation(
+    _In_    PFILE_ENTRY Entry
+    );
+
+__forceinline
+static
+LONGLONG
+_FileUpdaterCalculateNextUpdateTime(
+    void
+    );
+
+#ifdef ALLOC_PRAGMA
+#pragma alloc_text(PAGE,FileUpdaterWorkerThread)
+#pragma alloc_text(PAGE,_FileUpdaterUpdateInformationOnDisk)
+#pragma alloc_text(PAGE,_FileUpdaterSignalDeallocation)
+#pragma alloc_text(PAGE,_FileUpdaterCalculateNextUpdateTime)
+#endif
+
+VOID
+FileUpdaterWorkerThread(
+    _In_    PVOID       StartContext
+)
+{
+    NTSTATUS status;
+    PUPDATE_WORKER_CONTEXT pContext;
+    LARGE_INTEGER timeout;
+    PLIST_ENTRY pCurEntry;
+    BOOLEAN removedNewElement;
+    PFILE_ENTRY pElement;
+    PVOID eventsToWaitOn[WORKER_THREAD_MAX_NO_OF_OBJECTS_TO_WAIT_FOR];
+    DWORD noOfEventsToWaitOn;
+
+    PAGED_CODE();
+
+    LOG_FSTART;
+
+    NT_ASSERT(NULL != StartContext);
+
+    status = STATUS_SUCCESS;
+    pContext = (PUPDATE_WORKER_CONTEXT)StartContext;
+    pCurEntry = pContext->UpdateList;
+    removedNewElement = FALSE;
+    pElement = NULL;
+    timeout.QuadPart = WORKER_THREAD_TIMEOUT;
+    noOfEventsToWaitOn = 1;
+
+    RtlZeroMemory(eventsToWaitOn, sizeof(PVOID) * WORKER_THREAD_MAX_NO_OF_OBJECTS_TO_WAIT_FOR);
+
+    eventsToWaitOn[0] = pContext->UnloadEvent;
+
+    __try
+    {
+
+        #pragma warning(suppress:4127)
+        while (TRUE)
+        {
+            removedNewElement = FALSE;
+
+            status = KeWaitForMultipleObjects(noOfEventsToWaitOn,
+                                              eventsToWaitOn,
+                                              WaitAny,
+                                              Executive,
+                                              KernelMode,
+                                              FALSE,
+                                              &timeout,
+                                              NULL
+                                              );
+            if (STATUS_WAIT_0 == status)
+            {
+                // first object was signaled => driver is unloading
+                status = STATUS_SUCCESS;
+                break;
+            }
+
+            if (STATUS_WAIT_1 == status)
+            {
+                NT_ASSERT(NULL != pElement);
+                __analysis_assume(NULL != pElement);
+
+                _FileUpdaterSignalDeallocation(pElement);
+                pElement = NULL;
+
+                status = STATUS_TIMEOUT;
+            }
+               
+            if (STATUS_TIMEOUT != status)
+            {
+                LOGL("KeWaitForMultipleObjects failed with status: 0x%X\n", status);
+                __leave;
+            }
+
+            if (NULL != pElement)
+            {
+                NT_ASSERT(pCurEntry != pContext->UpdateList);
+                
+                status = _FileUpdaterUpdateInformationOnDisk(pElement);
+                if (!NT_SUCCESS(status))
+                {
+                    LOG_FUNC_ERROR("FileEntryPlaceInformationOnDisk", status);
+                    __leave;
+                }
+
+                // calculate current time in 100NS and add a second
+                pElement->NextUpdate.QuadPart = _FileUpdaterCalculateNextUpdateTime();
+
+                // after processing is done
+                FileStructureAcquireUpdateListLock(TRUE);
+                // insert the element we processed to the back of the list
+                InsertTailList(pContext->UpdateList, pCurEntry);
+                KeSetEvent(pElement->CanDeallocate, IO_NO_INCREMENT, FALSE);
+
+                pElement = NULL;
+
+                // remove first element from the list
+                pCurEntry = RemoveHeadList(pContext->UpdateList);
+                removedNewElement = TRUE;
+            }
+
+            if (!removedNewElement)
+            {
+                FileStructureAcquireUpdateListLock(TRUE);
+
+                // remove first element from the list
+                pCurEntry = RemoveHeadList(pContext->UpdateList);
+            }
+
+
+            if (pContext->UpdateList != pCurEntry)
+            {
+                pElement = CONTAINING_RECORD(pCurEntry, FILE_ENTRY, UpdateListEntry);
+                KeClearEvent(pElement->CanDeallocate);
+
+                timeout = pElement->NextUpdate;
+
+                eventsToWaitOn[1] = pElement->DeallocationEvent;
+                noOfEventsToWaitOn = 2;
+            }
+            else
+            {
+                // there are no elements left in the list => we will wait
+                // for a whole second
+                timeout.QuadPart = WORKER_THREAD_TIMEOUT;
+
+                eventsToWaitOn[1] = NULL;
+                noOfEventsToWaitOn = 1;
+            }
+
+            FileStructureReleaseUpdateListLock();
+        }
+    }
+    __finally
+    {
+        // free the next element which the thread was about to process
+        if (NULL != pElement)
+        {
+            _FileUpdaterSignalDeallocation(pElement);
+            pElement = NULL;
+        }
+
+        ExFreePoolWithTag(pContext, MEM_TAG_WORKER_THREAD);
+        pContext = NULL;
+    }
+
+    LOG_FEND_STATUS(status);
+
+    return;
+}
+
+SAL_SUCCESS
+static
+NTSTATUS
+_FileUpdaterUpdateInformationOnDisk(
+    _In_        PFILE_ENTRY         Entry
+    )
+{
+    NTSTATUS status;
+    PVOID pBuffer;
+    PCHAR pFormatedBuffer;
+    DWORD bufferSize;
+    DWORD formatedBufferSize;
+    BOOLEAN needLargerBuffer;
+    size_t formatBufferLength;
+
+    PAGED_CODE();
+
+    status = STATUS_SUCCESS;
+    pBuffer = NULL;
+    pFormatedBuffer = NULL;
+    needLargerBuffer = FALSE;
+    bufferSize = Entry->PopulateBufferSize;
+    formatBufferLength = 0;
+
+    __try
+    {
+        pBuffer = FileStructureRequestFixedBuffer(Entry);
+        if (NULL == pBuffer)
+        {
+            LOGL("FileStructureRequestFixedBuffer failed\n");
+            __leave;
+        }
+
+        status = Entry->PopulateFileFunction(pBuffer,
+                                             bufferSize,
+                                             Entry->PopulateFileContext);
+        if (!NT_SUCCESS(status))
+        {
+            LOG_FUNC_ERROR("Entry->PopulateFileFunction", status);
+            __leave;
+        }
+
+        do
+        {
+            if (NULL != pFormatedBuffer)
+            {
+                FileStructureFreeBuffers(Entry, NULL, pFormatedBuffer);
+
+                needLargerBuffer = TRUE;
+            }
+
+            pFormatedBuffer = FileStructureRequestDynamicBuffer(Entry, needLargerBuffer);
+            if (NULL == pBuffer)
+            {
+                LOGL("FileStructureRequestDynamicBuffer failed\n");
+                __leave;
+            }
+
+            // the formatted buffer size needs to be set after the increase
+            // was made
+            formatedBufferSize = Entry->FormatBufferSize;
+
+            status = Entry->FormatFileFunction(pBuffer,
+                                               bufferSize,
+                                               pFormatedBuffer,
+                                               formatedBufferSize);
+            if (STATUS_BUFFER_OVERFLOW != status)
+            {
+                break;
+            }
+        } while (STATUS_SUCCESS != status);
+
+        if (!NT_SUCCESS(status))
+        {
+            LOG_FUNC_ERROR("Entry->FormatFileFunction", status);
+            __leave;
+        }
+
+        // the length returned does not include the NULL terminator
+        // because we are simply going to write the buffer into a file there
+        // is no need to add it
+        status = RtlStringCbLengthA(pFormatedBuffer, formatedBufferSize, &formatBufferLength);
+        if (!NT_SUCCESS(status))
+        {
+            LOG_FUNC_ERROR("RtlStringCbLengthA", status);
+            __leave;
+        }
+
+        NT_ASSERT(formatBufferLength <= MAX_DWORD);
+
+        formatedBufferSize = (DWORD)formatBufferLength;
+
+        status = FsOpsWriteFile(Entry->FileObject,
+                                pFormatedBuffer,
+                                formatedBufferSize);
+        if (!NT_SUCCESS(status))
+        {
+            LOG_FUNC_ERROR("FsOpsWriteFile", status);
+            __leave;
+        }
+    }
+    __finally
+    {
+        FileStructureFreeBuffers(Entry, pBuffer, pFormatedBuffer);
+        pBuffer = NULL;
+        pFormatedBuffer = NULL;
+    }
+
+    return status;
+}
+
+__forceinline
+static
+void
+_FileUpdaterSignalDeallocation(
+    _In_    PFILE_ENTRY Entry
+    )
+{
+    PAGED_CODE();
+
+    NT_ASSERT(NULL != Entry);
+
+    // if we don't want a double remove ASSERT we need to use
+    // InitalizeListHead on the LIST_ENTRY
+    InitializeListHead(&Entry->UpdateListEntry);
+
+    // signal that the structure can be deallocated
+    KeSetEvent(Entry->CanDeallocate, IO_NO_INCREMENT, FALSE);
+}
+
+__forceinline
+static
+LONGLONG
+_FileUpdaterCalculateNextUpdateTime(
+    void
+    )
+{
+    LARGE_INTEGER systemTime;
+
+    PAGED_CODE();
+
+    KeQuerySystemTime(&systemTime);
+
+    return systemTime.QuadPart + WORKER_THREAD_DELAY_BETWEEN_UPDATES;
+}
+=================================file_updater.h=================================
+#pragma once
+
+typedef struct _UPDATE_WORKER_CONTEXT
+{
+    PLIST_ENTRY             UpdateList;
+
+    PKEVENT                 UnloadEvent;
+} UPDATE_WORKER_CONTEXT, *PUPDATE_WORKER_CONTEXT;
+
+KSTART_ROUTINE              FileUpdaterWorkerThread;
+====================================fs_ops.c====================================
+#include "driver.h"
+#include "fs_ops.h"
+
+static
+SAL_SUCCESS
+NTSTATUS
+_FsOpsOpenGeneric(
+    _In_        PWCHAR          DirectoryName,
+    _In_opt_    HANDLE          RootHandle,
+    _Out_       PHANDLE         Handle,
+    _Out_opt_   PFILE_OBJECT*   FileObject,
+    _In_        ACCESS_MASK     DesireAccess,
+    _In_        ULONG           CreateDispotion,
+    _In_        ULONG           CreateOptions
+    );
+
+#ifdef ALLOC_PRAGMA
+#pragma alloc_text(PAGE,FsOpsCreateDirectory)
+#pragma alloc_text(PAGE,FsOpsCreateFile)
+#pragma alloc_text(PAGE,FsOpsWriteFile)
+#pragma alloc_text(PAGE,_FsOpsOpenGeneric)
+#endif
+
+SAL_SUCCESS
+NTSTATUS
+FsOpsOpenDirectory(
+    _In_        PWCHAR          DirectoryName,
+    _Out_       PHANDLE         DirectoryHandle
+    )
+{
+    return _FsOpsOpenGeneric(DirectoryName,
+                             NULL,
+                             DirectoryHandle,
+                             NULL,
+                             FILE_LIST_DIRECTORY | FILE_TRAVERSE,
+                             FILE_OPEN,
+                             FILE_DIRECTORY_FILE
+                             );
+}
+
+SAL_SUCCESS
+NTSTATUS
+FsOpsCreateDirectory(
+    _In_        PWCHAR          DirectoryName,
+    _In_opt_    HANDLE          RootHandle,
+    _Out_       PHANDLE         DirectoryHandle
+    )
+{
+    PAGED_CODE();
+
+    return _FsOpsOpenGeneric(DirectoryName,
+                             RootHandle,
+                             DirectoryHandle,
+                             NULL,
+                             FILE_LIST_DIRECTORY | FILE_TRAVERSE,
+                             FILE_CREATE,
+                             FILE_DIRECTORY_FILE | FILE_DELETE_ON_CLOSE
+                             );
+}
+
+SAL_SUCCESS
+NTSTATUS
+FsOpsCreateFile(
+    _In_        PWCHAR          FileName,
+    _In_opt_    HANDLE          RootHandle,
+    _Out_       PHANDLE         FileHandle,
+    _Out_opt_   PFILE_OBJECT*   FileObject
+    )
+{
+    PAGED_CODE();
+
+    return _FsOpsOpenGeneric(FileName,
+                             RootHandle,
+                             FileHandle,
+                             FileObject,
+                             FILE_GENERIC_READ | FILE_GENERIC_WRITE,
+                             FILE_CREATE,
+                             FILE_DELETE_ON_CLOSE
+                             );
+}
+
+SAL_SUCCESS
+NTSTATUS
+FsOpsWriteFile(
+    _In_        PFILE_OBJECT    FileObject,
+    _In_        PVOID           Buffer,
+    _In_        DWORD           BufferSize
+    )
+{
+    NTSTATUS status;
+    LARGE_INTEGER byteOffset;
+    PFLT_INSTANCE pInstance;
+
+    PAGED_CODE();
+
+    status = STATUS_SUCCESS;
+
+    // because we want ASYNCHRONOUS operation we need to specify a byte
+    // offset (i.e. we always want to write starting from offset 0)
+    byteOffset.QuadPart = 0;
+
+    pInstance = DrvGetProcInstance();
+    NT_ASSERT(NULL != pInstance);
+
+    status = FltWriteFile(pInstance,
+                          FileObject,
+                          &byteOffset,
+                          BufferSize,
+                          Buffer,
+                          FLTFL_IO_OPERATION_DO_NOT_UPDATE_BYTE_OFFSET,
+                          NULL,
+                          NULL,
+                          NULL);
+    if (!NT_SUCCESS(status))
+    {
+        LOG_FUNC_ERROR("FltWriteFile", status);
+        return status;
+    }
+
+    return status;
+}
+
+SAL_SUCCESS
+static
+NTSTATUS
+_FsOpsOpenGeneric(
+    _In_        PWCHAR          DirectoryName,
+    _In_opt_    HANDLE          RootHandle,
+    _Out_       PHANDLE         Handle,
+    _Out_opt_   PFILE_OBJECT*   FileObject,
+    _In_        ACCESS_MASK     DesireAccess,
+    _In_        ULONG           CreateDispotion,
+    _In_        ULONG           CreateOptions
+    )
+{
+    NTSTATUS status;
+    HANDLE hFile;
+    OBJECT_ATTRIBUTES objAttrs;
+    UNICODE_STRING fileName;
+    IO_STATUS_BLOCK iosb;
+    PFLT_INSTANCE pInstance;
+    PFLT_FILTER pFilter;
+
+    PAGED_CODE();
+
+    if (NULL == DirectoryName)
+    {
+        return STATUS_INVALID_PARAMETER_1;
+    }
+
+    if (NULL == Handle)
+    {
+        return STATUS_INVALID_PARAMETER_3;
+    }
+
+    status = STATUS_SUCCESS;
+    hFile = NULL;
+    pInstance = DrvGetProcInstance();
+    NT_ASSERT(NULL != pInstance);
+
+    pFilter = DrvGetFilter();
+    NT_ASSERT(NULL != pFilter);
+
+    RtlInitUnicodeString(&fileName, DirectoryName);
+
+    InitializeObjectAttributes(&objAttrs, &fileName, OBJ_KERNEL_HANDLE, RootHandle, NULL);
+
+    __try
+    {
+        status = FltCreateFileEx(pFilter,
+                                 pInstance,
+                                 &hFile,
+                                 FileObject,
+                                 DesireAccess,
+                                 &objAttrs,
+                                 &iosb,
+                                 NULL,
+                                 FILE_ATTRIBUTE_NORMAL,
+                                 FILE_SHARE_READ,
+                                 CreateDispotion,
+                                 CreateOptions,
+                                 NULL,
+                                 0,
+                                 0);
+        if (!NT_SUCCESS(status))
+        {
+            LOG_FUNC_ERROR("FltCreateFile", status);
+            __leave;
+        }
+    }
+    __finally
+    {
+        NTSTATUS statusSup;
+
+        if (!NT_SUCCESS(status))
+        {
+            if (NULL != hFile)
+            {
+                statusSup = FltClose(hFile);
+                if (!NT_SUCCESS(statusSup))
+                {
+                    LOG_FUNC_ERROR("FltClose", statusSup);
+                }
+
+                hFile = NULL;
+            }
+        }
+        else
+        {
+            *Handle = hFile;
+        }
+    }
+
+
+    return status;
+}
+====================================fs_ops.h====================================
+#pragma once
+
+SAL_SUCCESS
+NTSTATUS
+FsOpsOpenDirectory(
+    _In_        PWCHAR          DirectoryName,
+    _Out_       PHANDLE         DirectoryHandle
+    );
+
+SAL_SUCCESS
+NTSTATUS
+FsOpsCreateDirectory(
+    _In_        PWCHAR          DirectoryName,
+    _In_opt_    HANDLE          RootHandle,
+    _Out_       PHANDLE         DirectoryHandle
+    );
+
+SAL_SUCCESS
+NTSTATUS
+FsOpsCreateFile(
+    _In_        PWCHAR          FileName,
+    _In_opt_    HANDLE          RootHandle,
+    _Out_       PHANDLE         FileHandle,
+    _Out_opt_   PFILE_OBJECT*   FileObject
+    );
+
+SAL_SUCCESS
+NTSTATUS
+FsOpsWriteFile(
+    _In_        PFILE_OBJECT    FileObject,
+    _In_        PVOID           Buffer,
+    _In_        DWORD           BufferSize
+    );
+===================================imports.c====================================
+#include "driver.h"
+#include "imports.h"
+
+#define ZW_QUERY_SYSTEM_INFORMATION_FUNC_NAME       L"ZwQuerySystemInformation"
+
+PFUNC_ZwQuerySystemInformation ZwQuerySystemInformation = NULL;
+
+#ifdef ALLOC_PRAGMA
+#pragma alloc_text(INIT,ImportDynamicFunctions)
+#endif
+
+SAL_SUCCESS
+NTSTATUS
+ImportDynamicFunctions(
+    void
+    )
+{
+    NTSTATUS status;
+    DECLARE_CONST_UNICODE_STRING(zwQuerySystemInfoFuncName, ZW_QUERY_SYSTEM_INFORMATION_FUNC_NAME);
+
+    status = STATUS_UNSUCCESSFUL;
+
+    // warning C4090: 'function': different 'const' qualifiers
+    // warning C4055 : 'type cast' : from data pointer 'PVOID' to function pointer 'PFUNC_ZwQuerySystemInformation'
+    #pragma warning(suppress:4055 4090)
+    ZwQuerySystemInformation = (PFUNC_ZwQuerySystemInformation) MmGetSystemRoutineAddress(&zwQuerySystemInfoFuncName);
+    if (NULL == ZwQuerySystemInformation)
+    {
+        LOGL("MmGetSystemRoutineAddress failed with status: 0x%X\n", status);
+        return status;
+    }
+
+    return STATUS_SUCCESS;
+}
+===================================imports.h====================================
+#pragma once
+
+typedef
+NTSTATUS 
+(__stdcall* PFUNC_ZwQuerySystemInformation) (
+    _In_      ULONG                    SystemInformationClass,
+    _Inout_   PVOID                    SystemInformation,
+    _In_      ULONG                    SystemInformationLength,
+    _Out_opt_ PULONG                   ReturnLength
+    );
+
+extern PFUNC_ZwQuerySystemInformation ZwQuerySystemInformation;
+
+SAL_SUCCESS
+NTSTATUS
+ImportDynamicFunctions(
+    void
+    );
+================================lookaside_list.c================================
+#include "driver.h"
+#include "lookaside_list.h"
+
+#define  NO_OF_LOOKASIDE_LISTS                  6
+
+typedef struct _LOOKASIDE_LIST_INFO
+{
+    LOOKASIDE_LIST_EX       LookasideList;
+    DWORD                   EntrySize;
+
+    #ifdef DBG
+    volatile DWORD          TotalNumberOfAllocations;
+    volatile QWORD          TotalAllocationSize;
+    #endif
+} LOOKASIDE_LIST_INFO, *PLOOKASIDE_LIST_INFO;
+
+static LOOKASIDE_LIST_INFO          gLookasideLists[NO_OF_LOOKASIDE_LISTS];
+
+static const DWORD                  LIST_ALLOCATION_SIZES[NO_OF_LOOKASIDE_LISTS] = { 0x40, 0x100, 0x200, 0x400, 0x1000, 0x4000 };
+
+#ifdef DBG
+ALLOCATE_FUNCTION_EX _LookasideListAllocateEx;
+#endif
+
+#ifdef ALLOC_PRAGMA
+#pragma alloc_text(PAGE,LookasideListsPreinit)
+#pragma alloc_text(PAGE,LookasideListsInit)
+#pragma alloc_text(PAGE,LookasideListsUninit)
+#pragma alloc_text(PAGE,LookasideListRetrieveAppropiateListIndex)
+#pragma alloc_text(PAGE,LookasideListAllocateFromLookasideList)
+#pragma alloc_text(PAGE,LookasideListRequestLargerSizeAllocationListIndex)
+#pragma alloc_text(PAGE,LookasideListRetrieveAllocationSizeForListIndex)
+#pragma alloc_text(PAGE,LookasideListFreeFromLookasideList)
+
+#ifdef DBG
+#pragma alloc_text(PAGE,LookasideListDumpAllocationInformation)
+#endif
+
+#endif
+
+void
+LookasideListsPreinit(
+    void
+    )
+{
+    DWORD i;
+
+    PAGED_CODE();
+
+    RtlZeroMemory(&gLookasideLists, sizeof(LOOKASIDE_LIST_INFO) * NO_OF_LOOKASIDE_LISTS);
+
+    for (i = 0; i < NO_OF_LOOKASIDE_LISTS; ++i)
+    {
+        gLookasideLists[i].EntrySize = LIST_ALLOCATION_SIZES[i];
+    }
+}
+
+NTSTATUS
+LookasideListsInit(
+    void
+    )
+{
+    NTSTATUS status;
+    DWORD i;
+
+    PAGED_CODE();
+
+    status = STATUS_SUCCESS;
+
+    __try
+    {
+        for (i = 0; i < NO_OF_LOOKASIDE_LISTS; ++i)
+        {
+            status = ExInitializeLookasideListEx(&(gLookasideLists[i].LookasideList),
+                                                 NULL,
+                                                 NULL,
+                                                 PagedPool,
+                                                 0,
+                                                 gLookasideLists[i].EntrySize,
+                                                 MEM_TAG_TEMP,
+                                                 0
+                                                 );
+            if (!NT_SUCCESS(status))
+            {
+                LOG_FUNC_ERROR("ExInitializeLookasideListEx", status);
+                __leave;
+            }
+        }
+    }
+    __finally
+    {
+        if (!NT_SUCCESS(status))
+        {
+            LookasideListsUninit();
+        }
+    }
+
+    return status;
+}
+
+void
+LookasideListsUninit(
+    void
+    )
+{
+    DWORD i;
+
+    PAGED_CODE();
+
+    for (i = 0; i < NO_OF_LOOKASIDE_LISTS; ++i)
+    {
+        // This routine frees any remaining entries in the specified 
+        // lookaside list and then removes the list from the system-wide 
+        // set of active lookaside lists.
+        ExDeleteLookasideListEx(&(gLookasideLists[i].LookasideList));
+    }
+}
+
+DWORD
+LookasideListRetrieveAppropiateListIndex(
+    IN      DWORD       BufferSize
+    )
+{
+    DWORD i;
+
+    PAGED_CODE();
+
+    NT_ASSERT(0 != BufferSize);
+
+    for (i = 0; i < NO_OF_LOOKASIDE_LISTS; ++i)
+    {
+        if (BufferSize < gLookasideLists[i].EntrySize)
+        {
+            return i;
+        }
+    }
+
+    return INVALID_LIST_INDEX;
+}
+
+DWORD
+LookasideListRequestLargerSizeAllocationListIndex(
+    IN      DWORD       CurrentIndex
+    )
+{
+    NT_ASSERT(CurrentIndex < NO_OF_LOOKASIDE_LISTS - 1);
+
+    PAGED_CODE();
+
+    return CurrentIndex + 1;
+}
+
+DWORD
+LookasideListRetrieveAllocationSizeForListIndex(
+    IN      DWORD       CurrentIndex
+    )
+{
+    NT_ASSERT(CurrentIndex < NO_OF_LOOKASIDE_LISTS );
+
+    PAGED_CODE();
+
+    return gLookasideLists[CurrentIndex].EntrySize;
+}
+
+PTR_SUCCESS
+PVOID
+LookasideListAllocateFromLookasideList(
+    IN      DWORD       Index
+#ifdef DBG
+    ,IN      DWORD       BufferSize
+#endif
+    )
+{
+    PVOID pResult;
+
+    PAGED_CODE();
+
+    pResult = ExAllocateFromLookasideListEx(&gLookasideLists[Index].LookasideList);
+    if (NULL == pResult)
+    {
+        LOGL("ExAllocateFromLookasideListEx failed\n");
+        return NULL;
+    }
+
+#ifdef DBG
+    InterlockedIncrement( (volatile LONG*) &gLookasideLists[Index].TotalNumberOfAllocations);
+    InterlockedAdd64( (volatile LONG64*) &gLookasideLists[Index].TotalAllocationSize, BufferSize);
+#endif
+
+    return pResult;
+}
+
+VOID
+LookasideListFreeFromLookasideList(
+    IN      DWORD       Index,
+    IN      PVOID       Entry
+    )
+{
+    PAGED_CODE();
+
+    NT_ASSERT(Index < NO_OF_LOOKASIDE_LISTS);
+
+    ExFreeToLookasideListEx(&gLookasideLists[Index].LookasideList, Entry);
+}
+
+#ifdef DBG
+VOID
+LookasideListDumpAllocationInformation(
+    void
+    )
+{
+    DWORD i;
+
+    PAGED_CODE();
+
+    for (i = 0; i < NO_OF_LOOKASIDE_LISTS; ++i)
+    {
+        LOG("Lookaside list %u: \n", i);
+        LOG("Total allocation size: %I64u\n", gLookasideLists[i].TotalAllocationSize);
+        LOG("Number of allocations: %u\n", gLookasideLists[i].TotalNumberOfAllocations);
+        LOG("Fixed allocation size: %u\n", gLookasideLists[i].EntrySize);
+
+        // want to avoid division by 0 :)
+        if (0 != gLookasideLists[i].TotalNumberOfAllocations)
+        {
+            LOG("Average size per allocation: %I64u\n", gLookasideLists[i].TotalAllocationSize / gLookasideLists[i].TotalNumberOfAllocations);
+        }
+    }
+}
+#endif
+================================lookaside_list.h================================
+#pragma once
+
+#define INVALID_LIST_INDEX              (MAX_DWORD)
+
+void
+LookasideListsPreinit(
+    void
+    );
+
+NTSTATUS
+LookasideListsInit(
+    void
+    );
+
+void
+LookasideListsUninit(
+    void
+    );
+
+DWORD
+LookasideListRetrieveAppropiateListIndex(
+    IN      DWORD       BufferSize
+    );
+
+DWORD
+LookasideListRequestLargerSizeAllocationListIndex(
+    IN      DWORD       CurrentIndex
+    );
+
+DWORD
+LookasideListRetrieveAllocationSizeForListIndex(
+    IN      DWORD       CurrentIndex
+    );
+
+PTR_SUCCESS
+PVOID
+LookasideListAllocateFromLookasideList(
+    IN      DWORD       Index
+#ifdef DBG
+    ,IN      DWORD       BufferSize
+#endif
+    );
+
+VOID
+LookasideListFreeFromLookasideList(
+    IN      DWORD       Index,
+    IN      PVOID       Entry
+    );
+
+#ifdef DBG
+VOID
+LookasideListDumpAllocationInformation(
+    void
+    );
+#endif
+==================================operation.c===================================
+#include "driver.h"
+#include "operation.h"
+
+FLT_PREOP_CALLBACK_STATUS
+FltPreCreateOperation(
+    _Inout_ PFLT_CALLBACK_DATA    Data,
+    _In_    PCFLT_RELATED_OBJECTS FltObjects,
+    _Out_   PVOID                 *CompletionContext
+    )
+{
+    ULONG createDisposition;
+    FLT_PREOP_CALLBACK_STATUS operationStatus;
+
+    LOG_FSTART;
+
+    UNREFERENCED_PARAMETER(FltObjects);
+    UNREFERENCED_PARAMETER(CompletionContext);
+
+    createDisposition = FILE_OVERWRITE;
+    operationStatus = FLT_PREOP_SUCCESS_NO_CALLBACK;
+
+    // the high 8 bits correspond to the CreateDisposition field in the
+    // FltCreateFile function
+    createDisposition = (Data->Iopb->Parameters.Create.Options >> 24);
+
+    __try
+    {
+        if (FILE_OPEN != createDisposition)
+        {
+            // we only allow files to be opened
+            Data->IoStatus.Status = STATUS_ACCESS_DENIED;
+            operationStatus = FLT_PREOP_COMPLETE;
+
+            __leave;
+        }
+    }
+    __finally
+    {
+        LOG_FEND_STATUS(operationStatus);
+    }
+
+    return operationStatus;
+}
+==================================operation.h===================================
+#pragma once
+
+FLT_PREOP_CALLBACK_STATUS 
+FltPreCreateOperation(
+    _Inout_ PFLT_CALLBACK_DATA    Data,
+    _In_    PCFLT_RELATED_OBJECTS FltObjects,
+    _Out_   PVOID                 *CompletionContext
+    );
+=====================================proc.c=====================================
+#include "driver.h"
+#include "proc.h"
+#include "proc_info.h"
+#include "imports.h"
+
+typedef struct _PROC_DATA
+{
+    BOOLEAN         RegisteredNotifyRoutine;
+
+    _Guarded_by_(ProcessTableLock)
+    RTL_AVL_TABLE   ProcessTable;
+    EX_PUSH_LOCK    ProcessTableLock;
+} PROC_DATA, *PPROC_DATA;
+
+typedef unsigned __int8 BYTE;
+
+typedef struct _SYSTEM_PROCESS_INFORMATION {
+    ULONG NextEntryOffset;
+    ULONG NumberOfThreads;
+    BYTE Reserved1[48];
+    PVOID Reserved2[3];
+    HANDLE UniqueProcessId;
+    PVOID Reserved3;
+    ULONG HandleCount;
+    BYTE Reserved4[4];
+    PVOID Reserved5[11];
+    SIZE_T PeakPagefileUsage;
+    SIZE_T PrivatePageCount;
+    LARGE_INTEGER Reserved6[6];
+} SYSTEM_PROCESS_INFORMATION, *PSYSTEM_PROCESS_INFORMATION;
+
+typedef enum _SYSTEM_INFORMATION_CLASS {
+    SystemBasicInformation = 0,
+    SystemPerformanceInformation = 2,
+    SystemTimeOfDayInformation = 3,
+    SystemProcessInformation = 5,
+    SystemProcessorPerformanceInformation = 8,
+    SystemInterruptInformation = 23,
+    SystemExceptionInformation = 33,
+    SystemRegistryQuotaInformation = 37,
+    SystemLookasideInformation = 45
+} SYSTEM_INFORMATION_CLASS;
+
+static PROC_DATA gProcessData;
+
+static
+NTSTATUS
+_ProcNewProcessCreated(
+    _Inout_  PEPROCESS              Process,
+    _In_     HANDLE                 ProcessId,
+    _In_     PPS_CREATE_NOTIFY_INFO CreateInfo
+    );
+
+static
+NTSTATUS
+_ProcProcessTerminated(
+    _Inout_  PEPROCESS              Process,
+    _In_     HANDLE                 ProcessId
+    );
+
+static
+NTSTATUS
+_ProcCollectActiveProcesses(
+    void
+    );
+
+static
+__forceinline
+void
+_ProcAcquireProcessTableLock(
+    _In_    BOOLEAN                 Exclusive
+    );
+
+static
+__forceinline
+void
+_ProcReleaseProcessTableLock(
+    void
+    );
+
+#ifdef ALLOC_PRAGMA
+#pragma alloc_text(PAGE,ProcPreinit)
+#pragma alloc_text(PAGE,ProcInit)
+#pragma alloc_text(PAGE,ProcUninit)
+#pragma alloc_text(PAGE,ProcNotifyRoutine)
+#pragma alloc_text(PAGE,ProcLookupProcess)
+#pragma alloc_text(PAGE,_ProcNewProcessCreated)
+#pragma alloc_text(PAGE,_ProcCollectActiveProcesses)
+#pragma alloc_text(PAGE,_ProcProcessTerminated)
+#pragma alloc_text(PAGE,_ProcAcquireProcessTableLock)
+#pragma alloc_text(PAGE,_ProcReleaseProcessTableLock)
+#endif
+
+VOID 
+ProcNotifyRoutine(
+    _Inout_  PEPROCESS              Process,
+    _In_     HANDLE                 ProcessId,
+    _In_opt_ PPS_CREATE_NOTIFY_INFO CreateInfo
+    )
+{
+    NTSTATUS status;
+
+    PAGED_CODE();
+
+    status = STATUS_SUCCESS;
+
+    if (NULL != CreateInfo)
+    {
+        status = _ProcNewProcessCreated(Process, ProcessId, CreateInfo);
+        if (!NT_SUCCESS(status))
+        {
+            LOG_FUNC_ERROR("_ProcNewProcessCreated", status);
+        }
+    }
+    else
+    {
+        status = _ProcProcessTerminated(Process, ProcessId);
+        if (!NT_SUCCESS(status))
+        {
+            LOG_FUNC_ERROR("_ProcProcessTerminated", status);
+        }
+    }
+}
+
+_No_competing_thread_
+VOID
+ProcPreinit(
+    void
+    )
+{
+    PAGED_CODE();
+
+    RtlZeroMemory(&gProcessData, sizeof(PROC_DATA));
+
+    RtlInitializeGenericTableAvl(&gProcessData.ProcessTable,
+                                 ProcEntryCompare,
+                                 ProcEntryAllocate,
+                                 ProcEntryFree,
+                                 NULL
+                                 );
+
+    FltInitializePushLock(&gProcessData.ProcessTableLock);
+}
+
+_No_competing_thread_
+NTSTATUS
+ProcInit(
+    void
+    )
+{
+    NTSTATUS status;
+
+    PAGED_CODE();
+
+    status = STATUS_SUCCESS;
+
+    __try
+    {
+        // register notification routine
+        status = PsSetCreateProcessNotifyRoutineEx(ProcNotifyRoutine, FALSE);
+        if (!NT_SUCCESS(status))
+        {
+            LOG_FUNC_ERROR("PsSetCreateProcessNotifyRoutineEx", status);
+            __leave;
+        }
+        gProcessData.RegisteredNotifyRoutine = TRUE;
+
+        // collect currently active processes
+        status = _ProcCollectActiveProcesses();
+        if (!NT_SUCCESS(status))
+        {
+            LOG_FUNC_ERROR("_ProcCollectActiveProcesses", status);
+            __leave;
+        }
+    }
+    __finally
+    {
+        if (!NT_SUCCESS(status))
+        {
+            ProcUninit();
+        }
+
+        LOG_FEND_STATUS(status);
+    }
+
+
+    return status;
+}
+
+_No_competing_thread_
+VOID
+ProcUninit(
+    void
+    )
+{
+    NTSTATUS status;
+    PPROC_ENTRY pEntryData;
+
+    PAGED_CODE();
+
+    status = STATUS_SUCCESS;
+
+    if (gProcessData.RegisteredNotifyRoutine)
+    {
+        status = PsSetCreateProcessNotifyRoutineEx(ProcNotifyRoutine, TRUE);
+        if (!NT_SUCCESS(status))
+        {
+            LOG_FUNC_ERROR("PsSetCreateProcessNotifyRoutineEx", status);
+        }
+        gProcessData.RegisteredNotifyRoutine = FALSE;
+    }
+
+    while (NULL != (pEntryData = RtlGetElementGenericTableAvl(&gProcessData.ProcessTable, 0)))
+    {
+        status = ProcEntryDeallocateProcessData(&gProcessData.ProcessTable,
+                                                pEntryData);
+        if (!NT_SUCCESS(status))
+        {
+            LOG_FUNC_ERROR("ProcEntryDeallocateProcessData", status);
+            pEntryData = NULL;
+        }
+    }
+
+    ProcPreinit();
+}
+
+static
+NTSTATUS
+_ProcCollectActiveProcesses(
+    void
+    )
+{
+    NTSTATUS status;
+    PSYSTEM_PROCESS_INFORMATION procInfo;
+    PSYSTEM_PROCESS_INFORMATION pCurProcInfo;
+    DWORD bufferSize;
+    DWORD sizeNeeded;
+    DWORD offset;
+    BOOLEAN lockAcquired;
+    DWORD i;
+
+    PAGED_CODE();
+
+    status = STATUS_SUCCESS;
+    procInfo = NULL;
+    bufferSize = 0;
+    sizeNeeded = 0;
+    offset = 0;
+    lockAcquired = FALSE;
+    pCurProcInfo = NULL;
+    i = 0;
+
+    __try
+    {
+        bufferSize = 0x1000;
+
+        do 
+        {
+            if (NULL != procInfo)
+            {
+                ExFreePoolWithTag(procInfo, MEM_TAG_TEMP);
+                procInfo = NULL;
+            }
+
+            procInfo = ExAllocatePoolWithTag(PagedPool, bufferSize, MEM_TAG_TEMP);
+            if (NULL == procInfo)
+            {
+                status = STATUS_INSUFFICIENT_RESOURCES;
+                LOG_ALLOC_ERROR("ExAllocatePoolWithTag", bufferSize);
+                __leave;
+            }
+
+            status = ZwQuerySystemInformation(SystemProcessInformation,
+                                              procInfo,
+                                              bufferSize,
+                                              &sizeNeeded);
+            if (!NT_SUCCESS(status))
+            {
+                // we add 10% more then required
+                bufferSize = sizeNeeded + ( sizeNeeded / 10 );
+            }
+        } while ( STATUS_INFO_LENGTH_MISMATCH == status );
+
+        if (!NT_SUCCESS(status))
+        {
+            LOG_FUNC_ERROR("ZwQuerySystemInformation", status);
+            __leave;
+        }
+       
+
+        _ProcAcquireProcessTableLock(TRUE);
+        lockAcquired = TRUE;
+        pCurProcInfo = procInfo;
+
+        #pragma warning(suppress:4127)
+        while(TRUE)
+        {
+            PROC_ENTRY entry;
+
+            RtlZeroMemory(&entry, sizeof(PROC_ENTRY));
+            entry.ProcessId = (QWORD) pCurProcInfo->UniqueProcessId;
+
+            LOGL("[%u] PID: %p\n", i, pCurProcInfo->UniqueProcessId );
+            LOGL("[%u] PID: %I64u\n", i, entry.ProcessId );
+
+            if (NULL == ProcEntryInsertProcessIntoTable(&gProcessData.ProcessTable,
+                                                        &entry,
+                                                        NULL))
+            {
+                status = STATUS_INSUFFICIENT_RESOURCES;
+                LOG_FUNC_ERROR("ProcEntryInsertProcessIntoTable", status);
+                __leave;
+            }
+
+            ++i;
+
+            pCurProcInfo = ((SYSTEM_PROCESS_INFORMATION*)((BYTE*)pCurProcInfo + pCurProcInfo->NextEntryOffset));
+
+            if (0 == pCurProcInfo->NextEntryOffset)
+            {
+                break;
+            }
+        }
+        
+    }
+    __finally
+    {
+        if (lockAcquired)
+        {
+            _ProcReleaseProcessTableLock();
+        }
+
+        if (NULL != procInfo)
+        {
+            ExFreePoolWithTag(procInfo, MEM_TAG_TEMP);
+            procInfo = NULL;
+        }
+
+    }
+
+    return status;
+}
+
+static
+NTSTATUS
+_ProcNewProcessCreated(
+    _Inout_  PEPROCESS              Process,
+    _In_     HANDLE                 ProcessId,
+    _In_     PPS_CREATE_NOTIFY_INFO CreateInfo
+    )
+{
+    PROC_ENTRY procEntryToInsert;
+    NTSTATUS status;
+    PPROC_ENTRY pProcessEntry;
+
+    PAGED_CODE();
+
+    status = STATUS_SUCCESS;
+    RtlZeroMemory(&procEntryToInsert, sizeof(PROC_ENTRY));
+    pProcessEntry = NULL;
+
+    UNREFERENCED_PARAMETER(Process);
+
+    procEntryToInsert.ProcessId = (QWORD) ProcessId;
+
+    _ProcAcquireProcessTableLock(TRUE);
+
+    __try
+    {
+        pProcessEntry = ProcEntryInsertProcessIntoTable(&gProcessData.ProcessTable,
+                                                        &procEntryToInsert,
+                                                        CreateInfo
+                                                        );
+        if (NULL == pProcessEntry)
+        {
+            status = STATUS_INSUFFICIENT_RESOURCES;
+            LOGL("ProcEntryInsertProcessIntoTable failed\n");
+            __leave;
+        }
+    }
+    __finally
+    {
+        _ProcReleaseProcessTableLock();
+    }
+
+    return status;
+}
+
+static
+NTSTATUS
+_ProcProcessTerminated(
+    _Inout_  PEPROCESS              Process,
+    _In_     HANDLE                 ProcessId
+    )
+{
+    NTSTATUS status;
+    QWORD pid;
+
+    PAGED_CODE();
+
+
+    UNREFERENCED_PARAMETER(Process);
+
+    status = STATUS_SUCCESS;
+    pid = (QWORD)ProcessId;
+
+
+    LOG("Process with PID %I64u terminated\n", pid);
+
+    _ProcAcquireProcessTableLock(TRUE);
+
+    __try
+    {
+        status = ProcEntryRemoveProcessFromTable(&gProcessData.ProcessTable,
+                                                 pid);
+        if (!NT_SUCCESS(status))
+        {
+            LOG_FUNC_ERROR("ProcEntryRemoveProcessFromTable", status);
+            __leave;
+        }
+    }
+    __finally
+    {
+        _ProcReleaseProcessTableLock();
+    }
+
+    return status;
+}
+
+PTR_SUCCESS
+PPROC_ENTRY
+ProcLookupProcess(
+    _In_    HANDLE      ProcessId
+)
+{
+    PPROC_ENTRY pResult;
+
+    PAGED_CODE();
+
+    _ProcAcquireProcessTableLock(FALSE);
+
+    pResult = ProcEntryLookupProcessFromTable( &gProcessData.ProcessTable, (QWORD)ProcessId);
+
+    _ProcReleaseProcessTableLock();
+
+    return pResult;
+}
+
+static
+__forceinline
+void
+_ProcAcquireProcessTableLock(
+    _In_    BOOLEAN                 Exclusive
+    )
+{
+    PAGED_CODE();
+
+    if (Exclusive)
+    {
+        FltAcquirePushLockExclusive(&gProcessData.ProcessTableLock);
+    }
+    else
+    {
+        FltAcquirePushLockShared(&gProcessData.ProcessTableLock);
+    }
+}
+
+static
+__forceinline
+void
+_ProcReleaseProcessTableLock(
+    void
+    )
+{
+    PAGED_CODE();
+
+    FltReleasePushLock(&gProcessData.ProcessTableLock);
+}
+=====================================proc.h=====================================
+#pragma once
+
+#include "proc_entry.h"
+
+_No_competing_thread_
+VOID
+ProcPreinit(
+    void
+    );
+
+_No_competing_thread_
+NTSTATUS
+ProcInit(
+    void
+    );
+
+_No_competing_thread_
+VOID
+ProcUninit(
+    void
+    );
+
+VOID 
+ProcNotifyRoutine(
+    _Inout_  PEPROCESS              Process,
+    _In_     HANDLE                 ProcessId,
+    _In_opt_ PPS_CREATE_NOTIFY_INFO CreateInfo
+    );
+
+PTR_SUCCESS
+PPROC_ENTRY
+ProcLookupProcess(
+    _In_     HANDLE                 ProcessId
+    );
+==================================proc_entry.c==================================
+#include "driver.h"
+#include "file_structure.h"
+#include "proc_info.h"
+#include "proc_entry.h"
+#include "fs_ops.h"
+
+/// THIS SHOULD BE REMOVED IN THE FUTURE
+#include "thread.h"
+
+#ifdef ALLOC_PRAGMA
+#pragma alloc_text(PAGE,ProcEntryCompare)
+#pragma alloc_text(PAGE,ProcEntryAllocate)
+#pragma alloc_text(PAGE,ProcEntryFree)
+#pragma alloc_text(PAGE,ProcEntryInsertProcessIntoTable)
+#pragma alloc_text(PAGE,ProcEntryLookupProcessFromTable)
+#pragma alloc_text(PAGE,ProcEntryRemoveProcessFromTable)
+#pragma alloc_text(PAGE,ProcEntryDeallocateProcessData)
+#endif
+
+RTL_GENERIC_COMPARE_RESULTS
+ProcEntryCompare(
+    __in struct _RTL_AVL_TABLE  *Table,
+    __in PVOID  FirstStruct,
+    __in PVOID  SecondStruct
+    )
+{
+    PPROC_ENTRY pFirstStruct = (PPROC_ENTRY)FirstStruct;
+    PPROC_ENTRY pSecondStruct = (PPROC_ENTRY)SecondStruct;
+
+    PAGED_CODE();
+
+    UNREFERENCED_PARAMETER(Table);
+
+    if (pFirstStruct->ProcessId < pSecondStruct->ProcessId)
+    {
+        return GenericLessThan;
+    }
+    else if (pFirstStruct->ProcessId > pSecondStruct->ProcessId)
+    {
+        return GenericGreaterThan;
+    }
+    else
+    {
+        return GenericEqual;
+    }
+}
+
+PVOID
+ProcEntryAllocate(
+    __in struct _RTL_AVL_TABLE  *Table,
+    __in CLONG  ByteSize
+    )
+{
+    PPROC_ENTRY pResult;
+
+    PAGED_CODE();
+
+    UNREFERENCED_PARAMETER(Table);
+    pResult = NULL;
+
+    pResult = ExAllocatePoolWithTag(PagedPool, ByteSize, MEM_TAG_PROC_ENTRY);
+    if (NULL == pResult)
+    {
+        LOG_ALLOC_ERROR("ExAllocatePoolWithTag", ByteSize);
+        return pResult;
+    }
+
+    return pResult;
+}
+
+
+_IRQL_requires_same_
+_Function_class_(RTL_AVL_FREE_ROUTINE)
+VOID
+NTAPI
+ProcEntryFree(
+    _In_ struct _RTL_AVL_TABLE *Table,
+    _In_ __drv_freesMem(Mem) _Post_invalid_ PVOID Buffer
+    )
+{
+    PAGED_CODE();
+
+    UNREFERENCED_PARAMETER(Table);
+
+    ExFreePoolWithTag(Buffer, MEM_TAG_PROC_ENTRY);
+}
+
+PTR_SUCCESS
+PVOID
+ProcEntryInsertProcessIntoTable(
+    _In_        RTL_AVL_TABLE*              Table,
+    _In_        PPROC_ENTRY                 Entry,
+    _In_opt_    PPS_CREATE_NOTIFY_INFO      CreateInfo
+    )
+{
+    PPROC_ENTRY pEntry;
+    WCHAR processPidName[PROCESS_MAX_NAME_LENGTH];
+    NTSTATUS status;
+    BOOLEAN newElement;
+    HANDLE pRootDirectory;
+
+    PAGED_CODE();
+
+    pEntry = NULL;
+    RtlZeroMemory(processPidName, PROCESS_MAX_NAME_LENGTH * sizeof(WCHAR));
+    status = STATUS_SUCCESS;
+    newElement = FALSE;
+    pRootDirectory = DrvGetProcRootDirectory();
+
+    pEntry = RtlInsertElementGenericTableAvl(Table,
+                                             Entry,
+                                             sizeof(PROC_ENTRY),
+                                             &newElement);
+    if (NULL == pEntry)
+    {
+        LOGL("RtlInsertElementGenericTableAvl failed\n");
+        return NULL;
+    }
+
+    status = RtlStringCchPrintfW(processPidName, PROCESS_MAX_NAME_LENGTH, L"%I64u", pEntry->ProcessId);
+    if (!NT_SUCCESS(status))
+    {
+        LOG_FUNC_ERROR("RtlStringCchPrintfW", status);
+        return NULL;
+    }
+
+    if (newElement)
+    {
+        __try
+        {
+            NT_ASSERT(NULL == pEntry->ProcessDirectory);
+
+            status = FsOpsCreateDirectory(processPidName,
+                                          pRootDirectory,
+                                          &pEntry->ProcessDirectory);
+            if (!NT_SUCCESS(status))
+            {
+                LOG_FUNC_ERROR("FsOpsCreateDirectory", status);
+                __leave;
+            }
+            
+            FltInitializePushLock(&pEntry->ThreadTableLock);
+            RtlInitializeGenericTableAvl(&pEntry->ThreadTable,
+                                         ThreadEntryCompare,
+                                         ThreadEntryAllocate,
+                                         ThreadEntryFree,
+                                         NULL
+                                         );
+
+            pEntry->ProcInfo = ExAllocatePoolWithTag(PagedPool, sizeof(PROC_INFO), MEM_TAG_WORKER_THREAD);
+            if (NULL == pEntry->ProcInfo)
+            {
+                status = STATUS_INSUFFICIENT_RESOURCES;
+                LOG_ALLOC_ERROR("ExAllocatePoolWithTag", sizeof(PROC_INFO));
+                __leave;
+            }
+            RtlZeroMemory(pEntry->ProcInfo, sizeof(PROC_INFO));
+            pEntry->ProcInfo->ProcessId = pEntry->ProcessId;
+
+            if (NULL != CreateInfo)
+            {
+                status = ProcInfoAddInformationFromCreateInfo(pEntry->ProcInfo, CreateInfo);
+                if (!NT_SUCCESS(status))
+                {
+                    LOG_FUNC_ERROR("ProcInfoAddInformationFromCreateInfo", status);
+                    __leave;
+                }
+            }
+
+            // we must initialize the file entry for this process
+            status = ProcInfoInitFile(pEntry);
+            if (!NT_SUCCESS(status))
+            {
+                LOG_FUNC_ERROR("ProcInfoInit", status);
+                __leave;
+            }
+            pEntry->ProcInfo = NULL;
+        }
+        __finally
+        {
+            NTSTATUS statusSup;
+
+            if (!NT_SUCCESS(status))
+            {
+                statusSup = ProcEntryRemoveProcessFromTable(Table, pEntry->ProcessId);
+                if (!NT_SUCCESS(statusSup))
+                {
+                    LOG_FUNC_ERROR("ProcEntryRemoveProcessFromTable", statusSup);
+                }
+
+                pEntry = NULL;
+            }
+        }
+    }
+
+    return pEntry;
+}
+
+PTR_SUCCESS
+PPROC_ENTRY
+ProcEntryLookupProcessFromTable(
+    _In_        RTL_AVL_TABLE*      Table,
+    _In_        QWORD               ProcessId
+    )
+{
+    PPROC_ENTRY pProcEntry;
+    PPROC_ENTRY pResult;
+
+    PAGED_CODE();
+
+    pResult = NULL;
+    pProcEntry = (PPROC_ENTRY) &ProcessId;
+
+    pResult = RtlLookupElementGenericTableAvl(Table,
+                                              pProcEntry);
+
+
+    return pResult;
+}
+
+SAL_SUCCESS
+NTSTATUS
+ProcEntryRemoveProcessFromTable(
+    _In_        RTL_AVL_TABLE*      Table,
+    _In_        QWORD               ProcessId
+    )
+{
+    NTSTATUS status;
+    PPROC_ENTRY pProcEntry;
+
+    PAGED_CODE();
+
+    status = STATUS_SUCCESS;
+    pProcEntry = NULL;
+
+    pProcEntry = ProcEntryLookupProcessFromTable(Table,
+                                                 ProcessId);
+    if (NULL == pProcEntry)
+    {
+        LOGL("Process %I64u was not present in table\n", ProcessId);
+        return STATUS_SUCCESS;
+    }
+
+    status = ProcEntryDeallocateProcessData(Table, pProcEntry);
+    if (!NT_SUCCESS(status))
+    {
+        LOG_FUNC_ERROR("ProcEntryDeallocateProcessData", status);
+        return status;
+    }
+
+    return status;
+}
+
+SAL_SUCCESS
+NTSTATUS
+ProcEntryDeallocateProcessData(
+    _In_        RTL_AVL_TABLE*      Table,
+    _In_        PPROC_ENTRY         Entry
+    )
+{
+    NTSTATUS status;
+    PTHREAD_ENTRY pThreadEntry;
+
+    PAGED_CODE();
+    
+    status = STATUS_SUCCESS;
+    pThreadEntry = NULL;
+
+    /// should we take thread lock?
+
+    // de-allocate threads
+    while (NULL != (pThreadEntry = RtlGetElementGenericTableAvl(&Entry->ThreadTable, 0)))
+    {
+        status = ThreadEntryDeallocateThreadData(&Entry->ThreadTable,
+                                                pThreadEntry);
+        if (!NT_SUCCESS(status))
+        {
+            LOG_FUNC_ERROR("ThreadEntryDeallocatThreadData", status);
+            pThreadEntry = NULL;
+        }
+    }
+
+    if (NULL != Entry->ProcInfoFileName)
+    {
+        status = FileStructureUninitializeFileEntry(Entry->ProcInfoFileName);
+        if (!NT_SUCCESS(status))
+        {
+            LOG_FUNC_ERROR("UninitializeFileEntry", status);
+        }
+    }
+
+    // close directory
+    if (NULL != Entry->ProcessDirectory)
+    {
+        status = FltClose(Entry->ProcessDirectory);
+        if (!NT_SUCCESS(status))
+        {
+            LOG_FUNC_ERROR("FltClose", status);
+            return status;
+        }
+        
+        Entry->ProcessDirectory = NULL;
+    }
+
+    if (NULL != Entry->ProcInfo)
+    {
+        ProcInfoFreeEntry(Entry->ProcInfo, NULL);
+        Entry->ProcInfo = NULL;
+    }
+
+    // remove entry from table
+    if (!RtlDeleteElementGenericTableAvl(Table,
+                                         Entry))
+    {
+        LOG_FUNC_ERROR("RtlDeleteElementGenericTableAvl", STATUS_UNSUCCESSFUL);
+        return STATUS_UNSUCCESSFUL;
+    }
+
+    return status;
+}
+==================================proc_entry.h==================================
+#pragma once
+
+// 2^64 (i.e MAX PID) has 20 digits => NULL terminator
+#define PROCESS_MAX_NAME_LENGTH         21
+
+typedef struct _PROC_ENTRY
+{
+    QWORD                   ProcessId;
+    HANDLE                  ProcessDirectory;
+
+    _Guarded_by_(ThreadTableLock)
+    RTL_AVL_TABLE           ThreadTable;
+    EX_PUSH_LOCK            ThreadTableLock;
+
+    PWCHAR                  ProcInfoFileName;
+    struct _PROC_INFO*      ProcInfo;
+} PROC_ENTRY, *PPROC_ENTRY;
+
+RTL_AVL_COMPARE_ROUTINE     ProcEntryCompare;
+RTL_AVL_ALLOCATE_ROUTINE    ProcEntryAllocate;
+RTL_AVL_FREE_ROUTINE        ProcEntryFree;
+
+PTR_SUCCESS
+PVOID
+ProcEntryInsertProcessIntoTable(
+    _In_        RTL_AVL_TABLE*              Table,
+    _In_        PPROC_ENTRY                 Entry,
+    _In_opt_    PPS_CREATE_NOTIFY_INFO      CreateInfo
+    );
+
+PTR_SUCCESS
+PPROC_ENTRY
+ProcEntryLookupProcessFromTable(
+    _In_        RTL_AVL_TABLE*      Table,
+    _In_        QWORD               ProcessId
+    );
+
+SAL_SUCCESS
+NTSTATUS
+ProcEntryRemoveProcessFromTable(
+    _In_        RTL_AVL_TABLE*      Table,
+    _In_        QWORD               ProcessId
+    );
+
+SAL_SUCCESS
+NTSTATUS
+ProcEntryDeallocateProcessData(
+    _In_        RTL_AVL_TABLE*      Table,
+    _In_        PPROC_ENTRY         Entry
+    );
+==================================proc_info.c===================================
+#include "driver.h"
+#include "file_structure.h"
+#include "proc_info.h"
+
+#define PROCINFO_FILE_NAME                          L"procinfo"
+#define PROCINFO_FILE_MAX_SIZE                      (sizeof(PROCINFO_FILE_NAME) + PROCESS_MAX_NAME_LENGTH * sizeof(WCHAR))
+
+#define PROCINFO_FIXED_BUFFER_SIZE                  (sizeof(PROC_INFO))
+#define PROCINFO_FORMAT_BUFFER_SIZE                 0x100
+
+FUNC_PopulateFileContent        ProcInfoPopFileContent;
+
+FUNC_FormatFileContent          ProcInfoFormatFileContent;
+
+
+#ifdef ALLOC_PRAGMA
+#pragma alloc_text(PAGE,ProcInfoPopFileContent)
+#pragma alloc_text(PAGE,ProcInfoFormatFileContent)
+#pragma alloc_text(PAGE,ProcInfoInitFile)
+#pragma alloc_text(PAGE,ProcInfoFreeEntry)
+#pragma alloc_text(PAGE,ProcInfoAddInformationFromCreateInfo)
+#endif
+
+_Use_decl_annotations_
+NTSTATUS
+(__stdcall ProcInfoPopFileContent) (
+    PVOID           BufferToFill,
+    DWORD           BufferSize,
+    PVOID           Context
+    )
+{
+    PAGED_CODE();
+
+    NT_ASSERT(NULL != BufferToFill);
+    NT_ASSERT(PROCINFO_FIXED_BUFFER_SIZE == BufferSize);
+    NT_ASSERT(NULL != Context);
+
+    __analysis_assume(NULL != Context);
+    RtlCopyMemory(BufferToFill, Context, BufferSize);
+
+    return STATUS_SUCCESS;
+}
+
+_Use_decl_annotations_
+NTSTATUS
+(__stdcall ProcInfoFormatFileContent) (
+    PVOID           BufferToFormat,
+    DWORD           BufferSize,
+    PCHAR           FormatedBuffer,
+    DWORD           FormatedBufferSize
+    )
+{
+    NTSTATUS status;
+    PPROC_INFO pProcInfo;
+
+    PAGED_CODE();
+
+#ifndef DBG
+    UNREFERENCED_PARAMETER(BufferSize);
+#endif
+
+    NT_ASSERT(PROCINFO_FIXED_BUFFER_SIZE == BufferSize);
+    NT_ASSERT(PROCINFO_FORMAT_BUFFER_SIZE <= FormatedBufferSize);
+
+    status = STATUS_SUCCESS;
+    pProcInfo = (PPROC_INFO)BufferToFormat;
+
+    status = RtlStringCbPrintfA(FormatedBuffer, FormatedBufferSize,
+                                "PID: %I64u\nPPID: %I64u\nImage Name: %s\nCommand line: %s",
+                                pProcInfo->ProcessId,
+                                pProcInfo->ParentProcessId,
+                                pProcInfo->ImageFileName,
+                                pProcInfo->CommandLine
+                                );
+    if (!NT_SUCCESS(status))
+    {
+        if (STATUS_BUFFER_OVERFLOW != status)
+        {
+            LOG_FUNC_ERROR("RtlStringCbPrintfA", status);
+            __debugbreak();
+        }
+        
+        return status;
+    }
+
+    return status;
+}
+
+NTSTATUS
+ProcInfoInitFile(
+    _In_        PPROC_ENTRY     ProcEntry
+    )
+{
+    NTSTATUS status;
+    SETUP_FILE_ENTRY setupFileEntry;
+    PWCHAR pBuffer;
+
+    PAGED_CODE();
+
+    status = STATUS_SUCCESS;
+    pBuffer = NULL;
+    RtlZeroMemory(&setupFileEntry, sizeof(SETUP_FILE_ENTRY));
+
+    __try
+    {
+        pBuffer = ExAllocatePoolWithTag(PagedPool, PROCINFO_FILE_MAX_SIZE, MEM_TAG_FILE_ENTRY);
+        if (NULL == pBuffer)
+        {
+            status = STATUS_INSUFFICIENT_RESOURCES;
+            LOG_ALLOC_ERROR("ExAllocatePoolWithTag", PROCINFO_FILE_MAX_SIZE);
+            __leave;
+        }
+
+        status = RtlStringCbPrintfW(pBuffer, PROCINFO_FILE_MAX_SIZE, L"%I64u\\%s", ProcEntry->ProcessId, PROCINFO_FILE_NAME);
+        if (!NT_SUCCESS(status))
+        {
+            LOG_FUNC_ERROR("RtlStringCbPrintfW", status);
+            __leave;
+        }
+
+        setupFileEntry.FileName = pBuffer;
+        setupFileEntry.InsertIntoUpdateList = TRUE;
+        setupFileEntry.MustFreeFileName = TRUE;
+
+        setupFileEntry.PopulateFileContent = ProcInfoPopFileContent;
+        setupFileEntry.PopulateFileContentContext = ProcEntry->ProcInfo;
+        setupFileEntry.PopulateFileContentContextFreeFunction = ProcInfoFreeEntry;
+        setupFileEntry.PopulateBufferSize = PROCINFO_FIXED_BUFFER_SIZE;
+
+        setupFileEntry.FormatFileContent = ProcInfoFormatFileContent;
+        setupFileEntry.FormatBufferSize = PROCINFO_FORMAT_BUFFER_SIZE;
+
+        status = FileStructureInitializeFileEntry(&setupFileEntry, TRUE);
+        if (!NT_SUCCESS(status))
+        {
+            LOG_FUNC_ERROR("InitializeFileEntry", status);
+            __leave;
+        }
+        ProcEntry->ProcInfoFileName = pBuffer;
+
+        // ownership transferred to SETUP_FILE_ENTRY
+        pBuffer = NULL;
+    }
+    __finally
+    {
+        if (NULL != pBuffer)
+        {
+            ExFreePoolWithTag(pBuffer, MEM_TAG_PROC_ENTRY);
+            pBuffer = NULL;
+        }
+    }
+
+    return status;
+}
+
+
+void
+(_stdcall ProcInfoFreeEntry)(
+    IN          PVOID       Object,
+    _In_opt_    PVOID       Context
+    )
+{
+    PPROC_INFO pProcInfo;
+
+    PAGED_CODE();
+
+#ifndef DBG
+    UNREFERENCED_PARAMETER(Context);
+#endif
+
+    NT_ASSERT(NULL != Object);
+    NT_ASSERT(NULL == Context);
+
+    pProcInfo = (PPROC_INFO)Object;
+
+    if (NULL != pProcInfo->CommandLine)
+    {
+        ExFreePoolWithTag(pProcInfo->CommandLine, MEM_TAG_WORKER_THREAD);
+        pProcInfo->CommandLine = NULL;
+    }
+
+    if (NULL != pProcInfo->ImageFileName)
+    {
+        ExFreePoolWithTag(pProcInfo->ImageFileName, MEM_TAG_WORKER_THREAD);
+        pProcInfo->ImageFileName = NULL;
+    }
+
+    ExFreePoolWithTag(pProcInfo, MEM_TAG_WORKER_THREAD);
+}
+
+NTSTATUS
+ProcInfoAddInformationFromCreateInfo(
+    _Inout_     PPROC_INFO              ProcInfo,
+    _In_        PPS_CREATE_NOTIFY_INFO  CreateInfo
+    )
+{
+    NTSTATUS status;
+    DWORD tempStringLength;
+    PCHAR pTempBuffer;
+
+    PAGED_CODE();
+
+    status = STATUS_SUCCESS;
+    tempStringLength = 0;
+    pTempBuffer = NULL;
+
+    __try
+    {
+        NT_ASSERT(NULL != ProcInfo);
+
+        ProcInfo->ParentProcessId = (QWORD)CreateInfo->ParentProcessId;
+
+        // get image name
+        tempStringLength = (CreateInfo->ImageFileName->Length / sizeof(WCHAR)) + 1;
+        pTempBuffer = ExAllocatePoolWithTag(PagedPool, tempStringLength, MEM_TAG_WORKER_THREAD);
+        if (NULL == pTempBuffer)
+        {
+            status = STATUS_INSUFFICIENT_RESOURCES;
+            LOG_ALLOC_ERROR("ExAllocatePoolWithTag", tempStringLength);
+            __leave;
+        }
+
+        status = RtlStringCbPrintfA(pTempBuffer, tempStringLength, "%wZ", CreateInfo->ImageFileName);
+        if (!NT_SUCCESS(status))
+        {
+            LOG_FUNC_ERROR("RtlStringCbPrintfA", status);
+            __leave;
+        }
+        ProcInfo->ImageFileName = pTempBuffer;
+        pTempBuffer = NULL;
+
+        // get command line
+        tempStringLength = (CreateInfo->CommandLine->Length / sizeof(WCHAR)) + 1;
+        pTempBuffer = ExAllocatePoolWithTag(PagedPool, tempStringLength, MEM_TAG_WORKER_THREAD);
+        if (NULL == pTempBuffer)
+        {
+            status = STATUS_INSUFFICIENT_RESOURCES;
+            LOG_ALLOC_ERROR("ExAllocatePoolWithTag", tempStringLength);
+            __leave;
+        }
+
+        status = RtlStringCbPrintfA(pTempBuffer, tempStringLength, "%wZ", CreateInfo->CommandLine);
+        if (!NT_SUCCESS(status))
+        {
+            LOG_FUNC_ERROR("RtlStringCbPrintfA", status);
+            __leave;
+        }
+        ProcInfo->CommandLine = pTempBuffer;
+        pTempBuffer = NULL;
+    }
+    __finally
+    {
+        if (!NT_SUCCESS(status))
+        {
+            if (NULL != pTempBuffer)
+            {
+                ExFreePoolWithTag(pTempBuffer, MEM_TAG_WORKER_THREAD);
+                pTempBuffer = NULL;
+            }
+        }
+    }
+
+    return status;
+}
+==================================proc_info.h===================================
+#pragma once
+
+#include "proc_entry.h"
+
+typedef struct _PROC_INFO
+{
+    QWORD           ProcessId;
+    QWORD           ParentProcessId;
+
+    PCHAR           ImageFileName;
+    PCHAR           CommandLine;
+} PROC_INFO, *PPROC_INFO;
+
+NTSTATUS
+ProcInfoInitFile(
+    _In_        PPROC_ENTRY     ProcEntry
+    );
+
+FUNC_FreeFunction ProcInfoFreeEntry;
+
+NTSTATUS
+ProcInfoAddInformationFromCreateInfo(
+    _Inout_     PPROC_INFO              ProcInfo,
+    _In_        PPS_CREATE_NOTIFY_INFO  CreateInfo
+    );
+===================================ref_cnt.c====================================
+#include "driver.h"
+
+#ifdef ALLOC_PRAGMA
+#pragma alloc_text(PAGE,RfcPreInit)
+#pragma alloc_text(PAGE,RfcInit)
+#pragma alloc_text(PAGE,RfcReference)
+#pragma alloc_text(PAGE,RfcDereference)
+#endif
+
+void
+RfcPreInit(
+    OUT     REF_COUNT*              Object
+    )
+{
+    PAGED_CODE();
+
+    NT_ASSERT(NULL != Object);
+
+    RtlZeroMemory(Object, sizeof(REF_COUNT));
+}
+
+SAL_SUCCESS
+NTSTATUS
+RfcInit(
+    OUT         REF_COUNT*              Object,
+    _In_opt_    PFUNC_FreeFunction      FreeFunction,
+    _In_opt_    PVOID                   Context
+    )
+{
+    PAGED_CODE();
+
+    if (NULL == Object)
+    {
+        return STATUS_INVALID_PARAMETER_1;
+    }
+
+    Object->FreeFunction = FreeFunction;
+    Object->Context = Context;
+    Object->ReferenceCount = 1;
+
+    return STATUS_SUCCESS;
+}
+
+SIZE_SUCCESS
+DWORD
+RfcReference(
+    _Inout_   REF_COUNT*              Object
+    )
+{
+    DWORD newRefCount;
+
+    PAGED_CODE();
+
+    NT_ASSERT(NULL != Object);
+
+    newRefCount = (DWORD)InterlockedIncrement( (volatile LONG*) &Object->ReferenceCount);
+    NT_ASSERTMSG( "Reached max reference count", MAX_DWORD > newRefCount);
+
+    return newRefCount;
+}
+
+SIZE_SUCCESS
+DWORD
+RfcDereference(
+    _Inout_   REF_COUNT*              Object
+    )
+{
+    DWORD newRefCount;
+
+    PAGED_CODE();
+
+    NT_ASSERT(NULL != Object);
+
+    newRefCount = (DWORD)InterlockedDecrement( (volatile LONG*) &Object->ReferenceCount);
+    NT_ASSERTMSG( "Object reference count reached -1", MAX_DWORD != newRefCount);
+
+    if (0 == newRefCount)
+    {
+        if (NULL != Object->FreeFunction)
+        {
+            Object->FreeFunction(Object, Object->Context);
+        }
+    }
+
+    return newRefCount;
+}
+=================================setup_files.c==================================
+#include "driver.h"
+#include "file_structure.h"
+
+#include "cpu_info.h"
+#include "version.h"
+
+const SETUP_FILE_ENTRY FILE_SETUP[] =
+{
+    {
+        CPUINFO_FILE_NAME,
+        TRUE,
+        FALSE,
+        CpuInfoPopFileContent,
+        NULL,
+        NULL,
+        CPUINFO_FIXED_BUFFER_SIZE,
+        CpuInfoFormatFileContent,
+        CPUINFO_FORMAT_BUFFER_SIZE,
+    },
+
+    {
+        VERSION_FILE_NAME,
+        TRUE,
+        FALSE,
+        VersionPopFileContent,
+        NULL,
+        NULL,
+        VERSION_FIXED_BUFFER_SIZE,
+        VersionFormatFileContent,
+        VERSION_FORMAT_BUFFER_SIZE
+    },
+
+    {
+        NULL,
+    }
+};
+
+#ifdef ALLOC_PRAGMA
+#pragma alloc_text(PAGE,SetupFiles)
+#endif
+
+_No_competing_thread_
+SAL_SUCCESS
+NTSTATUS
+SetupFiles(
+    void
+    )
+{
+    NTSTATUS status;
+    DWORD i;
+
+    PAGED_CODE();
+
+    status = STATUS_SUCCESS;
+    i = 0;
+
+    while (NULL != FILE_SETUP[i].FileName)
+    {
+        // we do not need to use locking here because there is no
+        // other thread manipulating the FILE_TABLE
+        status = FileStructureInitializeFileEntry(&FILE_SETUP[i], FALSE);
+        if (!NT_SUCCESS(status))
+        {
+            LOG_FUNC_ERROR("InitializeFileEntry", status);
+            return status;
+        }
+
+        ++i;
+    }
+
+    return status;
+}
+=================================setup_files.h==================================
+#pragma once
+
+#include "file_entry.h"
+
+typedef struct _SETUP_FILE_ENTRY
+{
+    PWCHAR                      FileName;
+    BOOLEAN                     InsertIntoUpdateList;
+    BOOLEAN                     MustFreeFileName;
+
+    PFUNC_PopulateFileContent   PopulateFileContent;
+    PVOID                       PopulateFileContentContext;
+    PFUNC_FreeFunction          PopulateFileContentContextFreeFunction;
+    DWORD                       PopulateBufferSize;
+
+    PFUNC_FormatFileContent     FormatFileContent;
+    DWORD                       FormatBufferSize;
+} SETUP_FILE_ENTRY, *PSETUP_FILE_ENTRY;
+
+_No_competing_thread_
+SAL_SUCCESS
+NTSTATUS
+SetupFiles(
+    void
+    );
+====================================thread.c====================================
+#include "driver.h"
+#include "thread.h"
+#include "proc.h"
+
+typedef struct _THREAD_DATA
+{
+    BOOLEAN         RegisteredNotifyRoutine;
+} THREAD_DATA, *PTHREAD_DATA;
+
+static
+SAL_SUCCESS
+NTSTATUS
+_ThreadNewThreadCreated(
+    IN PPROC_ENTRY  ParentProcess,
+    IN HANDLE       ThreadId
+    );
+
+static
+SAL_SUCCESS
+NTSTATUS
+_ThreadThreadTerminated(
+    IN PPROC_ENTRY  ParentProcess,
+    IN HANDLE       ThreadId
+    );
+
+#ifdef ALLOC_PRAGMA
+#pragma alloc_text(PAGE,ThreadPreinit)
+#pragma alloc_text(PAGE,ThreadInit)
+#pragma alloc_text(PAGE,ThreadUninit)
+#pragma alloc_text(PAGE,ThreadNotifyRoutine)
+#pragma alloc_text(PAGE,_ThreadNewThreadCreated)
+#pragma alloc_text(PAGE,_ThreadThreadTerminated)
+#endif
+
+static THREAD_DATA gThreadData;
+
+VOID
+ThreadNotifyRoutine(
+    IN HANDLE   ProcessId,
+    IN HANDLE   ThreadId,
+    IN BOOLEAN  Create
+    )
+{
+    PPROC_ENTRY pProcess;
+    NTSTATUS status;
+
+    PAGED_CODE();
+
+    pProcess = NULL;
+    status = STATUS_SUCCESS;
+
+    __try
+    {
+        pProcess = ProcLookupProcess(ProcessId);
+        if (NULL == pProcess)
+        {
+            LOGL("ProcLookupProcess failed for process with PID %p\n", ProcessId);
+            __leave;
+        }
+
+        if (Create)
+        {
+            status = _ThreadNewThreadCreated(pProcess, ThreadId);
+            if (!NT_SUCCESS(status))
+            {
+                LOG_FUNC_ERROR("_ThreadNewThreadCreated", status);
+            }
+        }
+        else
+        {
+            status = _ThreadThreadTerminated(pProcess, ThreadId);
+            if (!NT_SUCCESS(status))
+            {
+                LOG_FUNC_ERROR("_ThreadThreadTerminated", status);
+            }
+        }
+    }
+    __finally
+    {
+
+    }
+}
+
+_No_competing_thread_
+VOID
+ThreadPreinit(
+    void
+    )
+{
+    PAGED_CODE();
+
+    RtlZeroMemory(&gThreadData, sizeof(THREAD_DATA));
+}
+
+_No_competing_thread_
+NTSTATUS
+ThreadInit(
+    void
+    )
+{
+    NTSTATUS status;
+
+    PAGED_CODE();
+
+    status = PsSetCreateThreadNotifyRoutine(ThreadNotifyRoutine);
+    if (!NT_SUCCESS(status))
+    {
+        LOG_FUNC_ERROR("PsSetCreateThreadNotifyRoutineEx", status);
+        return status;
+    }
+    gThreadData.RegisteredNotifyRoutine = TRUE;
+
+    return status;
+}
+
+_No_competing_thread_
+VOID
+ThreadUninit(
+    void
+    )
+{
+    NTSTATUS status;
+
+    PAGED_CODE();
+
+    status = STATUS_SUCCESS;
+
+    if (gThreadData.RegisteredNotifyRoutine)
+    {
+        status = PsRemoveCreateThreadNotifyRoutine(ThreadNotifyRoutine);
+        if (!NT_SUCCESS(status))
+        {
+            LOG_FUNC_ERROR("PsRemoveCreateThreadNotifyRoutine", status);
+        }
+        gThreadData.RegisteredNotifyRoutine = FALSE;
+    }
+
+    ThreadPreinit();
+}
+
+static
+SAL_SUCCESS
+NTSTATUS
+_ThreadNewThreadCreated(
+    IN PPROC_ENTRY  ParentProcess,
+    IN HANDLE       ThreadId
+    )
+{
+    NTSTATUS status;
+    THREAD_ENTRY threadEntryToInsert;
+    PTHREAD_ENTRY pThreadEntry;
+
+    PAGED_CODE();
+
+    status = STATUS_SUCCESS;
+    RtlZeroMemory(&threadEntryToInsert, sizeof(THREAD_ENTRY));
+    pThreadEntry = NULL;
+
+    threadEntryToInsert.ThreadId = (QWORD) ThreadId;
+    threadEntryToInsert.ParentProcess = ParentProcess;
+
+    FltAcquirePushLockExclusive(&ParentProcess->ThreadTableLock);
+
+    __try
+    {
+        pThreadEntry = ThreadEntryInsertThreadIntoTable(&ParentProcess->ThreadTable,
+                                                        &threadEntryToInsert
+                                                        );
+        if (NULL == pThreadEntry)
+        {
+            status = STATUS_INSUFFICIENT_RESOURCES;
+            LOGL("ThreadEntryInsertThreadIntoTable failed\n");
+            __leave;
+        }
+    }
+    __finally
+    {
+        FltReleasePushLock(&ParentProcess->ThreadTableLock);
+    }
+
+    return status;
+}
+
+static
+SAL_SUCCESS
+NTSTATUS
+_ThreadThreadTerminated(
+    IN PPROC_ENTRY  ParentProcess,
+    IN HANDLE       ThreadId
+    )
+{
+    NTSTATUS status;
+    QWORD tid;
+
+    PAGED_CODE();
+
+    status = STATUS_SUCCESS;
+    tid = (QWORD)ThreadId;
+
+    FltAcquirePushLockExclusive(&ParentProcess->ThreadTableLock);
+
+    __try
+    {
+        status = ThreadEntryRemoveThreadFromTable(&ParentProcess->ThreadTable,
+                                                  tid);
+        if (!NT_SUCCESS(status))
+        {
+            LOG_FUNC_ERROR("ThreadEntryRemoveThreadFromTable", status);
+            __leave;
+        }
+    }
+    __finally
+    {
+        FltReleasePushLock(&ParentProcess->ThreadTableLock);
+    }
+
+    return status;
+}
+====================================thread.h====================================
+#pragma once
+
+#include "thread_entry.h"
+
+_No_competing_thread_
+VOID
+ThreadPreinit(
+    void
+    );
+
+_No_competing_thread_
+NTSTATUS
+ThreadInit(
+    void
+    );
+
+_No_competing_thread_
+VOID
+ThreadUninit(
+    void
+    );
+
+VOID
+ThreadNotifyRoutine(
+    IN HANDLE  ProcessId,
+    IN HANDLE  ThreadId,
+    IN BOOLEAN  Create
+    );
+=================================thread_entry.c=================================
+#include "driver.h"
+#include "thread_entry.h"
+#include "fs_ops.h"
+
+#include "proc_entry.h"
+
+// 2^64 (i.e MAX TID) has 20 digits => NULL terminator
+#define THREAD_MAX_NAME_LENGTH          21
+
+RTL_AVL_COMPARE_ROUTINE     ThreadEntryCompare;
+RTL_AVL_ALLOCATE_ROUTINE    ThreadEntryAllocate;
+RTL_AVL_FREE_ROUTINE        ThreadEntryFree;
+
+#ifdef ALLOC_PRAGMA
+#pragma alloc_text(PAGE,ThreadEntryCompare)
+#pragma alloc_text(PAGE,ThreadEntryAllocate)
+#pragma alloc_text(PAGE,ThreadEntryFree)
+#pragma alloc_text(PAGE,ThreadEntryInsertThreadIntoTable)
+#pragma alloc_text(PAGE,ThreadEntryLookupThreadFromTable)
+#pragma alloc_text(PAGE,ThreadEntryRemoveThreadFromTable)
+#pragma alloc_text(PAGE,ThreadEntryDeallocateThreadData)
+#endif
+
+RTL_GENERIC_COMPARE_RESULTS
+ThreadEntryCompare(
+    __in struct _RTL_AVL_TABLE  *Table,
+    __in PVOID  FirstStruct,
+    __in PVOID  SecondStruct
+    )
+{
+    PTHREAD_ENTRY pFirstStruct = (PTHREAD_ENTRY)FirstStruct;
+    PTHREAD_ENTRY pSecondStruct = (PTHREAD_ENTRY)SecondStruct;
+
+    PAGED_CODE();
+
+    UNREFERENCED_PARAMETER(Table);
+
+    if (pFirstStruct->ThreadId < pSecondStruct->ThreadId)
+    {
+        return GenericLessThan;
+    }
+    else if (pFirstStruct->ThreadId > pSecondStruct->ThreadId)
+    {
+        return GenericGreaterThan;
+    }
+    else
+    {
+        return GenericEqual;
+    }
+}
+
+PVOID
+ThreadEntryAllocate(
+    __in struct _RTL_AVL_TABLE  *Table,
+    __in CLONG  ByteSize
+    )
+{
+    PTHREAD_ENTRY pResult;
+
+    PAGED_CODE();
+
+    UNREFERENCED_PARAMETER(Table);
+    pResult = NULL;
+
+    pResult = ExAllocatePoolWithTag(PagedPool, ByteSize, MEM_TAG_THREAD_ENTRY);
+    if (NULL == pResult)
+    {
+        LOG_ALLOC_ERROR("ExAllocatePoolWithTag", ByteSize);
+        return pResult;
+    }
+
+    return pResult;
+}
+
+
+_IRQL_requires_same_
+_Function_class_(RTL_AVL_FREE_ROUTINE)
+VOID
+NTAPI
+ThreadEntryFree(
+    _In_ struct _RTL_AVL_TABLE *Table,
+    _In_ __drv_freesMem(Mem) _Post_invalid_ PVOID Buffer
+    )
+{
+    PAGED_CODE();
+
+    UNREFERENCED_PARAMETER(Table);
+
+    ExFreePoolWithTag(Buffer, MEM_TAG_THREAD_ENTRY);
+}
+
+PTR_SUCCESS
+PVOID
+ThreadEntryInsertThreadIntoTable(
+    _In_        RTL_AVL_TABLE*      Table,
+    _In_        PTHREAD_ENTRY       Entry
+    )
+{
+    NTSTATUS status;
+    PTHREAD_ENTRY pEntry;
+    BOOLEAN newElement;
+    WCHAR threadTidName[THREAD_MAX_NAME_LENGTH];
+
+    PAGED_CODE();
+
+    status = STATUS_SUCCESS;
+    pEntry = NULL;
+    newElement = FALSE;
+    RtlZeroMemory(&threadTidName, THREAD_MAX_NAME_LENGTH * sizeof(WCHAR));
+
+    pEntry = RtlInsertElementGenericTableAvl(Table,
+                                             Entry,
+                                             sizeof(THREAD_ENTRY),
+                                             &newElement);
+    if (NULL == pEntry)
+    {
+        LOGL("RtlInsertElementGenericTableAvl failed\n");
+        return NULL;
+    }
+
+    RtlStringCchPrintfW(threadTidName, THREAD_MAX_NAME_LENGTH, L"%I64u", pEntry->ThreadId);
+
+    if (newElement)
+    {
+        __try
+        {
+            NT_ASSERT(NULL == pEntry->ThreadDirectory);
+
+            status = FsOpsCreateDirectory(threadTidName,
+                                          pEntry->ParentProcess->ProcessDirectory,
+                                          &pEntry->ThreadDirectory);
+            if (!NT_SUCCESS(status))
+            {
+                LOG_FUNC_ERROR("FsOpsCreateDirectory", status);
+                __leave;
+            }
+        }
+        __finally
+        {
+            NTSTATUS statusSup;
+
+            if (!NT_SUCCESS(status))
+            {
+                statusSup = ThreadEntryRemoveThreadFromTable(Table, pEntry->ThreadId);
+                if (!NT_SUCCESS(statusSup))
+                {
+                    LOG_FUNC_ERROR("ThreadEntryRemoveThreadFromTable", statusSup);
+                }
+
+                pEntry = NULL;
+            }
+        }
+    }
+    
+
+    return pEntry;
+}
+
+PTR_SUCCESS
+PTHREAD_ENTRY
+ThreadEntryLookupThreadFromTable(
+    _In_        RTL_AVL_TABLE*      Table,
+    _In_        QWORD               ThreadId
+    )
+{
+    PTHREAD_ENTRY pThreadEntry;
+    PTHREAD_ENTRY pResult;
+
+    PAGED_CODE();
+
+    pResult = NULL;
+    pThreadEntry = (PTHREAD_ENTRY)&ThreadId;
+
+    pResult = RtlLookupElementGenericTableAvl(Table,
+                                              pThreadEntry);
+
+
+    return pResult;
+}
+
+SAL_SUCCESS
+NTSTATUS
+ThreadEntryRemoveThreadFromTable(
+    _In_        RTL_AVL_TABLE*      Table,
+    _In_        QWORD               ThreadId
+    )
+{
+    NTSTATUS status;
+    PTHREAD_ENTRY pThreadEntry;
+
+    PAGED_CODE();
+
+    status = STATUS_SUCCESS;
+    pThreadEntry = NULL;
+
+    pThreadEntry = ThreadEntryLookupThreadFromTable(Table,
+                                                    ThreadId);
+    if (NULL == pThreadEntry)
+    {
+        return STATUS_SUCCESS;
+    }
+
+    status = ThreadEntryDeallocateThreadData(Table, pThreadEntry);
+    if (!NT_SUCCESS(status))
+    {
+        LOG_FUNC_ERROR("ThreadEntryDeallocatThreadData", status);
+        return status;
+    }
+
+    return status;
+}
+
+SAL_SUCCESS
+NTSTATUS
+ThreadEntryDeallocateThreadData(
+    _In_        RTL_AVL_TABLE*      Table,
+    _In_        PTHREAD_ENTRY       Entry
+    )
+{
+    NTSTATUS status;
+
+    PAGED_CODE();
+
+    status = STATUS_SUCCESS;
+
+    // close directory
+    if (NULL != Entry->ThreadDirectory)
+    {
+        status = FltClose(Entry->ThreadDirectory);
+        if (!NT_SUCCESS(status))
+        {
+            LOG_FUNC_ERROR("FltClose", status);
+            return status;
+        }
+
+        Entry->ThreadDirectory = NULL;
+    }
+
+    if (!RtlDeleteElementGenericTableAvl(Table,
+                                         Entry))
+    {
+        LOGL("RtlDeleteElementGenericTableAvl failed\n");
+        return STATUS_UNSUCCESSFUL;
+    }
+
+    return status;
+}
+=================================thread_entry.h=================================
+#pragma once
+
+typedef struct _THREAD_ENTRY
+{
+    QWORD                   ThreadId;
+    HANDLE                  ThreadDirectory;
+    struct _PROC_ENTRY*     ParentProcess;
+} THREAD_ENTRY, *PTHREAD_ENTRY;
+
+RTL_AVL_COMPARE_ROUTINE     ThreadEntryCompare;
+RTL_AVL_ALLOCATE_ROUTINE    ThreadEntryAllocate;
+RTL_AVL_FREE_ROUTINE        ThreadEntryFree;
+
+PTR_SUCCESS
+PVOID
+ThreadEntryInsertThreadIntoTable(
+    _In_        RTL_AVL_TABLE*      Table,
+    _In_        PTHREAD_ENTRY       Entry
+    );
+
+PTR_SUCCESS
+PTHREAD_ENTRY
+ThreadEntryLookupThreadFromTable(
+    _In_        RTL_AVL_TABLE*      Table,
+    _In_        QWORD               ThreadId
+    );
+
+SAL_SUCCESS
+NTSTATUS
+ThreadEntryRemoveThreadFromTable(
+    _In_        RTL_AVL_TABLE*      Table,
+    _In_        QWORD               ThreadId
+    );
+
+SAL_SUCCESS
+NTSTATUS
+ThreadEntryDeallocateThreadData(
+    _In_        RTL_AVL_TABLE*      Table,
+    _In_        PTHREAD_ENTRY       Entry
+    );
+====================================utils.c=====================================
+#include "driver.h"
+#include "file_structure.h"
+#include "utils.h"
+
+#ifdef ALLOC_PRAGMA
+#pragma alloc_text(PAGE,UtilAllocateBufferAndCopyData)
+#endif
+
+SAL_SUCCESS
+NTSTATUS
+UtilAllocateBufferAndCopyData(
+    _In_reads_bytes_(BufferSize)    PVOID       BufferToCopy,
+    _In_                            DWORD       BufferSize,
+    _Outptr_                        PVOID*      BufferToAllocate
+    )
+{
+    NTSTATUS status;
+    PVOID newBuffer;
+
+    PAGED_CODE();
+
+    status = STATUS_SUCCESS;
+    newBuffer = NULL;
+
+    newBuffer = ExAllocatePoolWithTag(PagedPool, BufferSize, MEM_TAG_FILE_ENTRY);
+    if (NULL == newBuffer)
+    {
+        LOG_ALLOC_ERROR("ExAllocatePoolWithTag", BufferSize);
+        return STATUS_INSUFFICIENT_RESOURCES;
+    }
+
+    RtlCopyMemory(newBuffer, BufferToCopy, BufferSize);
+
+    *BufferToAllocate = newBuffer;
+
+    return status;
+}
+====================================utils.h=====================================
+#pragma once
+
+// this function does not format the input buffer
+// it just retransmits
+//FUNC_FormatFileContent              UtilDummyFormatFileContent;
+
+SAL_SUCCESS
+NTSTATUS
+UtilAllocateBufferAndCopyData(
+    _In_reads_bytes_(BufferSize)    PVOID       BufferToCopy,
+    _In_                            DWORD       BufferSize,
+    _Outptr_                        PVOID*      BufferToAllocate
+    );
+===================================version.c====================================
+#include "driver.h"
+#include "file_structure.h"
+#include "version.h"
+#include "utils.h"
+
+#ifdef ALLOC_PRAGMA
+#pragma alloc_text(PAGE, VersionPopFileContent)
+#pragma alloc_text(PAGE, VersionFormatFileContent)
+#endif
+
+_Use_decl_annotations_
+NTSTATUS
+VersionPopFileContent(
+    _Out_       PVOID           BufferToFill,
+    _In_        DWORD           BufferSize,
+    _In_opt_    PVOID           Context
+    )
+{
+    PRTL_OSVERSIONINFOEXW pOsVersion;
+    NTSTATUS status;
+
+    PAGED_CODE();
+
+#ifndef DBG
+    UNREFERENCED_PARAMETER(BufferSize);
+#endif
+    UNREFERENCED_PARAMETER(Context);
+
+    NT_ASSERT(NULL != BufferToFill);
+    NT_ASSERT(VERSION_FIXED_BUFFER_SIZE == BufferSize);
+
+    status = STATUS_SUCCESS;
+
+    pOsVersion = (PRTL_OSVERSIONINFOEXW)BufferToFill;
+    pOsVersion->dwOSVersionInfoSize = sizeof(RTL_OSVERSIONINFOEXW);
+
+    // Warning	C4133	'function': incompatible types - from 'RTL_OSVERSIONINFOEXW *' to 'PRTL_OSVERSIONINFOW'
+    #pragma warning(suppress:4133)
+    status = RtlGetVersion(pOsVersion);
+    if (!NT_SUCCESS(status))
+    {
+        LOG_FUNC_ERROR("RtlGetVersion", status);
+        return status;
+    }
+
+    return status;
+}
+
+
+_Use_decl_annotations_
+NTSTATUS
+(__stdcall VersionFormatFileContent) (
+    PVOID           BufferToFormat,
+    DWORD           BufferSize,
+    PCHAR           FormatedBuffer,
+    DWORD           FormatedBufferSize
+    )
+{
+    NTSTATUS status;
+    PRTL_OSVERSIONINFOEXW pVersionInfo;
+
+    PAGED_CODE();
+
+#ifndef DBG
+    UNREFERENCED_PARAMETER(BufferSize);
+#endif
+
+    NT_ASSERT(VERSION_FIXED_BUFFER_SIZE == BufferSize);
+    NT_ASSERT(VERSION_FORMAT_BUFFER_SIZE <= FormatedBufferSize);
+
+    status = STATUS_SUCCESS;
+    pVersionInfo = (PRTL_OSVERSIONINFOEXW)BufferToFormat;
+
+    status = RtlStringCbPrintfA(FormatedBuffer, FormatedBufferSize, 
+                                "Build Number: %u\nVersion: %u.%u", 
+                                pVersionInfo->dwBuildNumber, 
+                                pVersionInfo->dwMajorVersion, 
+                                pVersionInfo->dwMinorVersion
+                                );
+    if (!NT_SUCCESS(status))
+    {
+        LOG_FUNC_ERROR("RtlStringCbPrintfA", status);
+        return status;
+    }
+
+    return status;
+}
+===================================version.h====================================
+#pragma once
+
+#define VERSION_FILE_NAME                   L"version"
+#define VERSION_FIXED_BUFFER_SIZE           sizeof(RTL_OSVERSIONINFOEXW)
+#define VERSION_FORMAT_BUFFER_SIZE          0x30
+
+FUNC_PopulateFileContent    VersionPopFileContent;
+
+FUNC_FormatFileContent      VersionFormatFileContent;
+===============================WinProcFilter.inf================================
+;
+; WinProcFilter.inf
+;
+
+[Version]
+Signature="$WINDOWS NT$"
+Class=%ClassName%
+ClassGuid={b86dff51-a31e-4bac-b3cf-e8cfe75c9fc2}
+Provider=%ManufacturerName%
+CatalogFile=WinProcFilter.cat
+DriverVer=
+
+[DestinationDirs]
+DefaultDestDir          = 12
+WinProcFilter.DriverFiles = 12
+
+[DefaultInstall]
+OptionDesc          = %ServiceDescription%
+CopyFiles           = WinProcFilter.DriverFiles
+
+[DefaultInstall.Services]
+AddService          = %ServiceName%,,WinProcFilter.Service
+
+[DefaultUninstall]
+DelFiles            = WinProcFilter.DriverFiles
+DelReg              = WinProcFilter.DelRegistry
+
+[DefaultUninstall.Services]
+DelService          = %ServiceName%,0x200       ;Ensure service is stopped before deleting
+
+[WinProcFilter.Service]
+DisplayName      = %ServiceName%
+Description      = %ServiceDescription%
+ServiceBinary    = %12%\WinProcFilter.sys        ;%windir%\system32\drivers\
+Dependencies     = "FltMgr"
+ServiceType      = 2                            ;SERVICE_FILE_SYSTEM_DRIVER
+StartType        = 3                            ;SERVICE_DEMAND_START
+ErrorControl     = 1                            ;SERVICE_ERROR_NORMAL
+LoadOrderGroup   = "FSFilter Activity Monitor"
+AddReg           = WinProcFilter.AddRegistry
+
+[WinProcFilter.AddRegistry]
+HKR,"Instances","DefaultInstance",0x00000000,%DefaultInstance%
+HKR,"Instances\"%Instance1.Name%,"Altitude",0x00000000,%Instance1.Altitude%
+HKR,"Instances\"%Instance1.Name%,"Flags",0x00010001,%Instance1.Flags%
+HKR,"Parameters","Flags",0x00010001,0x00000001
+
+[WinProcFilter.DelRegistry]
+HKR,Parameters,,0x00002000			;0x00002000 FLG_DELREG_KEYONLY_COMMON
+
+[WinProcFilter.DriverFiles]
+WinProcFilter.sys
+
+[SourceDisksFiles]
+WinProcFilter.sys = 1
+
+[SourceDisksNames]
+1 = %DiskName%,
+
+[Strings]
+ServiceName="WinProcFilter"
+ServiceDescription="WinProc Filter"
+ManufacturerName="Alexandru Gurzou"
+ClassName="ActivityMonitor"
+DiskName="WinProcFilter Source Disk"
+
+;;
+;; Instances specific information
+;;
+DefaultInstance         = "WinProc Filter Instance"
+Instance1.Name          = "WinProc Filter Instance"
+Instance1.Altitude      = "370031"
+Instance1.Flags         = 0x0              ; Allow all attachments
+
+=============================WinProcFilter.vcxproj==============================
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{2B19E908-61B2-453E-AB8F-A8DB76B81899}</ProjectGuid>
+    <TemplateGuid>{dd38f7fc-d7bd-488b-9242-7d8754cde80d}</TemplateGuid>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <MinimumVisualStudioVersion>12.0</MinimumVisualStudioVersion>
+    <Configuration>Debug</Configuration>
+    <Platform Condition="'$(Platform)' == ''">Win32</Platform>
+    <RootNamespace>WinProcFilter</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.10240.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <TargetVersion>Windows10</TargetVersion>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
+    <ConfigurationType>Driver</ConfigurationType>
+    <DriverType>WDM</DriverType>
+    <DriverTargetPlatform>Universal</DriverTargetPlatform>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <TargetVersion>Windows10</TargetVersion>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
+    <ConfigurationType>Driver</ConfigurationType>
+    <DriverType>WDM</DriverType>
+    <DriverTargetPlatform>Universal</DriverTargetPlatform>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <TargetVersion>Windows10</TargetVersion>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
+    <ConfigurationType>Driver</ConfigurationType>
+    <DriverType>WDM</DriverType>
+    <DriverTargetPlatform>Universal</DriverTargetPlatform>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <TargetVersion>Windows10</TargetVersion>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
+    <ConfigurationType>Driver</ConfigurationType>
+    <DriverType>WDM</DriverType>
+    <DriverTargetPlatform>Universal</DriverTargetPlatform>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
+    <OutDir>$(ProjectDir)..\bin\$(PlatformName)\$(ConfigurationName)\</OutDir>
+    <ApiValidator_Enable>false</ApiValidator_Enable>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <Inf2CatUseLocalTime>true</Inf2CatUseLocalTime>
+    <IntDir>..\temp\$(ProjectName)$(PlatformName)\$(ConfigurationName)\</IntDir>
+    <RunCodeAnalysis>true</RunCodeAnalysis>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
+    <OutDir>$(ProjectDir)..\bin\$(PlatformName)\$(ConfigurationName)\</OutDir>
+    <ApiValidator_Enable>false</ApiValidator_Enable>
+    <Inf2CatUseLocalTime>true</Inf2CatUseLocalTime>
+    <IntDir>..\temp\$(ProjectName)$(PlatformName)\$(ConfigurationName)\</IntDir>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <RunCodeAnalysis>true</RunCodeAnalysis>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
+    <OutDir>$(ProjectDir)..\bin\$(PlatformName)\$(ConfigurationName)\</OutDir>
+    <ApiValidator_Enable>false</ApiValidator_Enable>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <Inf2CatUseLocalTime>true</Inf2CatUseLocalTime>
+    <IntDir>..\temp\$(ProjectName)$(PlatformName)\$(ConfigurationName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
+    <OutDir>$(ProjectDir)..\bin\$(PlatformName)\$(ConfigurationName)\</OutDir>
+    <ApiValidator_Enable>false</ApiValidator_Enable>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <Inf2CatUseLocalTime>true</Inf2CatUseLocalTime>
+    <IntDir>..\temp\$(ProjectName)$(PlatformName)\$(ConfigurationName)\</IntDir>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>..\common;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <SDLCheck>true</SDLCheck>
+      <DisableSpecificWarnings />
+      <EnablePREfast>true</EnablePREfast>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>fltmgr.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <DataExecutionPrevention>true</DataExecutionPrevention>
+      <AdditionalOptions>/INTEGRITYCHECK %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+    <PostBuildEvent>
+      <Command>..\postbuild\place_files.cmd $(ProjectName) $(ProjectDir) $(PlatformName) $(ConfigurationName) $(SolutionName) $(TargetName) $(TargetExt)</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>..\common;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <SDLCheck>true</SDLCheck>
+      <DisableSpecificWarnings />
+      <EnablePREfast>true</EnablePREfast>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>fltmgr.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <DataExecutionPrevention>true</DataExecutionPrevention>
+      <AdditionalOptions>/INTEGRITYCHECK %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+    <PostBuildEvent>
+      <Command>..\postbuild\place_files.cmd $(ProjectName) $(ProjectDir) $(PlatformName) $(ConfigurationName) $(SolutionName) $(TargetName) $(TargetExt)</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>..\common;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <SDLCheck>true</SDLCheck>
+      <DisableSpecificWarnings />
+      <EnablePREfast>false</EnablePREfast>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>fltmgr.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <DataExecutionPrevention>true</DataExecutionPrevention>
+      <AdditionalOptions>/INTEGRITYCHECK %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+    <PostBuildEvent>
+      <Command>..\postbuild\place_files.cmd $(ProjectName) $(ProjectDir) $(PlatformName) $(ConfigurationName) $(SolutionName) $(TargetName) $(TargetExt)</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>..\common;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <SDLCheck>true</SDLCheck>
+      <DisableSpecificWarnings />
+      <EnablePREfast>false</EnablePREfast>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>fltmgr.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <DataExecutionPrevention>true</DataExecutionPrevention>
+      <AdditionalOptions>/INTEGRITYCHECK %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+    <PostBuildEvent>
+      <Command>..\postbuild\place_files.cmd $(ProjectName) $(ProjectDir) $(PlatformName) $(ConfigurationName) $(SolutionName) $(TargetName) $(TargetExt)</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <Inf Include="WinProcFilter.inf" />
+  </ItemGroup>
+  <ItemGroup>
+    <FilesToPackage Include="$(TargetPath)" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="cpu_info.c" />
+    <ClCompile Include="driver.c" />
+    <ClCompile Include="file_entry.c" />
+    <ClCompile Include="fs_ops.c" />
+    <ClCompile Include="imports.c" />
+    <ClCompile Include="file_structure.c" />
+    <ClCompile Include="lookaside_list.c" />
+    <ClCompile Include="operation.c" />
+    <ClCompile Include="proc.c" />
+    <ClCompile Include="proc_entry.c" />
+    <ClCompile Include="proc_info.c" />
+    <ClCompile Include="ref_cnt.c" />
+    <ClCompile Include="setup_files.c" />
+    <ClCompile Include="thread.c" />
+    <ClCompile Include="thread_entry.c" />
+    <ClCompile Include="file_updater.c" />
+    <ClCompile Include="utils.c" />
+    <ClCompile Include="version.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\common\defs.h" />
+    <ClInclude Include="..\common\log.h" />
+    <ClInclude Include="..\common\mem_tags.h" />
+    <ClInclude Include="..\common\ref_cnt.h" />
+    <ClInclude Include="..\common\sal_interface.h" />
+    <ClInclude Include="cpu_info.h" />
+    <ClInclude Include="driver.h" />
+    <ClInclude Include="file_entry.h" />
+    <ClInclude Include="fs_ops.h" />
+    <ClInclude Include="imports.h" />
+    <ClInclude Include="file_structure.h" />
+    <ClInclude Include="lookaside_list.h" />
+    <ClInclude Include="operation.h" />
+    <ClInclude Include="proc.h" />
+    <ClInclude Include="proc_entry.h" />
+    <ClInclude Include="proc_info.h" />
+    <ClInclude Include="setup_files.h" />
+    <ClInclude Include="thread.h" />
+    <ClInclude Include="thread_entry.h" />
+    <ClInclude Include="file_updater.h" />
+    <ClInclude Include="utils.h" />
+    <ClInclude Include="version.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
+=========================WinProcFilter.vcxproj.filters==========================
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Driver Files">
+      <UniqueIdentifier>{8E41214B-6785-4CFE-B992-037D68949A14}</UniqueIdentifier>
+      <Extensions>inf;inv;inx;mof;mc;</Extensions>
+    </Filter>
+    <Filter Include="Header Files\common">
+      <UniqueIdentifier>{e3163f20-d662-4c4e-a734-0077a54c680e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\file_organization">
+      <UniqueIdentifier>{1d822f38-b0ae-49f3-8815-6d5b8ce3e4eb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\file_organization\general">
+      <UniqueIdentifier>{1caeee9e-8993-47b8-9d54-1191f954e32f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\file_organization\process">
+      <UniqueIdentifier>{210d1148-91c0-40ee-87af-de9fb1307fe5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\file_organization">
+      <UniqueIdentifier>{bb0dd7ed-2efe-4e14-8a7d-d25883860d20}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\file_organization\general">
+      <UniqueIdentifier>{9a76edb6-4e09-4f6f-97d5-91f59f0da37b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\file_organization\process">
+      <UniqueIdentifier>{c3cab651-86a3-4f66-bdb2-3b6499dfd7e1}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Inf Include="WinProcFilter.inf">
+      <Filter>Driver Files</Filter>
+    </Inf>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="driver.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="operation.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="proc.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="imports.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fs_ops.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="proc_entry.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="thread_entry.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="thread.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="version.c">
+      <Filter>Source Files\file_organization\general</Filter>
+    </ClCompile>
+    <ClCompile Include="utils.c">
+      <Filter>Source Files\file_organization\general</Filter>
+    </ClCompile>
+    <ClCompile Include="file_entry.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="file_structure.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lookaside_list.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="setup_files.c">
+      <Filter>Source Files\file_organization\general</Filter>
+    </ClCompile>
+    <ClCompile Include="cpu_info.c">
+      <Filter>Source Files\file_organization\general</Filter>
+    </ClCompile>
+    <ClCompile Include="proc_info.c">
+      <Filter>Source Files\file_organization\process</Filter>
+    </ClCompile>
+    <ClCompile Include="ref_cnt.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="file_updater.c">
+      <Filter>Source Files\file_organization\general</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\common\sal_interface.h">
+      <Filter>Header Files\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\log.h">
+      <Filter>Header Files\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\mem_tags.h">
+      <Filter>Header Files\common</Filter>
+    </ClInclude>
+    <ClInclude Include="driver.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="operation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="proc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="imports.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fs_ops.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="proc_entry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\defs.h">
+      <Filter>Header Files\common</Filter>
+    </ClInclude>
+    <ClInclude Include="thread_entry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="thread.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="file_entry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="version.h">
+      <Filter>Header Files\file_organization\general</Filter>
+    </ClInclude>
+    <ClInclude Include="utils.h">
+      <Filter>Header Files\file_organization\general</Filter>
+    </ClInclude>
+    <ClInclude Include="lookaside_list.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="setup_files.h">
+      <Filter>Header Files\file_organization\general</Filter>
+    </ClInclude>
+    <ClInclude Include="cpu_info.h">
+      <Filter>Header Files\file_organization\general</Filter>
+    </ClInclude>
+    <ClInclude Include="proc_info.h">
+      <Filter>Header Files\file_organization\process</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\ref_cnt.h">
+      <Filter>Header Files\common</Filter>
+    </ClInclude>
+    <ClInclude Include="file_structure.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="file_updater.h">
+      <Filter>Header Files\file_organization\general</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
+===========================WinProcFilter.vcxproj.user===========================
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <TestCertificate>CN="WDKTestCert Alex,130853509772980160" | 1CB8A78D13D6CF24CE79BEA65EB91AFF44C2568A</TestCertificate>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <TestCertificate>CN="WDKTestCert Alex,130853509772980160" | 1CB8A78D13D6CF24CE79BEA65EB91AFF44C2568A</TestCertificate>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <TestCertificate>CN="WDKTestCert Alex,130853509772980160" | 1CB8A78D13D6CF24CE79BEA65EB91AFF44C2568A</TestCertificate>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <TestCertificate>CN="WDKTestCert Alex,130853509772980160" | 1CB8A78D13D6CF24CE79BEA65EB91AFF44C2568A</TestCertificate>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ShowAllFiles>false</ShowAllFiles>
+  </PropertyGroup>
+</Project>

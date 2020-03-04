@@ -1,0 +1,4 @@
+#!gpxe
+
+kernel MINIHVEX.bin
+boot

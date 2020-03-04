@@ -1,0 +1,286 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{7429B85A-0C7A-4760-A83A-18DE9036F137}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(SolutionDir)..\tools\vsyasm\vsyasm.props" />
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(SolutionDir)..\bin\$(PlatformName)\$(Configuration)\$(ProjectName)\</OutDir>
+    <IntDir>$(SolutionDir)..\temp\$(PlatformName)\$(Configuration)\$(ProjectName)\</IntDir>
+    <TargetName>MINIHVEX</TargetName>
+    <TargetExt>.bin</TargetExt>
+    <LinkIncremental>false</LinkIncremental>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <RunCodeAnalysis>true</RunCodeAnalysis>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(SolutionDir)..\bin\$(PlatformName)\$(Configuration)\$(ProjectName)\</OutDir>
+    <IntDir>$(SolutionDir)..\temp\$(PlatformName)\$(Configuration)\$(ProjectName)\</IntDir>
+    <TargetName>MINIHVEX</TargetName>
+    <TargetExt>.bin</TargetExt>
+    <LinkIncremental>false</LinkIncremental>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <RunCodeAnalysis>true</RunCodeAnalysis>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <BuildLog>
+      <Path>$(IntDir)log\BuildLog.htm</Path>
+    </BuildLog>
+    <ClCompile>
+      <OmitFramePointers>false</OmitFramePointers>
+      <PreprocessorDefinitions>X64;AMD64;DEBUG;_DEBUG;WIN64</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <MinimalRebuild>false</MinimalRebuild>
+      <ExceptionHandling>false</ExceptionHandling>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <ControlFlowGuard>false</ControlFlowGuard>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <EnableParallelCodeGeneration>false</EnableParallelCodeGeneration>
+      <FloatingPointExceptions>false</FloatingPointExceptions>
+      <CreateHotpatchableImage>false</CreateHotpatchableImage>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <OpenMPSupport>false</OpenMPSupport>
+      <AdditionalIncludeDirectories>$(SolutionDir)\..\distorm\inc;$(SolutionDir)\..\acpi\inc;$(SolutionDir)\..\inc;$(SolutionDir)\minihvex\headers;$(SolutionDir)\commonlib\inc;$(SolutionDir)\hal\inc</AdditionalIncludeDirectories>
+      <CompileAsManaged>false</CompileAsManaged>
+      <WarningLevel>Level4</WarningLevel>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <DisableSpecificWarnings>4313;4474;4476;4477;</DisableSpecificWarnings>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <EnablePREfast>true</EnablePREfast>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <ShowIncludes>false</ShowIncludes>
+    </ClCompile>
+    <Link>
+      <OutputFile>$(OutDir)\MINIHVEX.bin</OutputFile>
+    </Link>
+    <Link>
+      <AdditionalLibraryDirectories>$(SolutionDir)\..\distorm\lib;$(SolutionDir)\..\acpi\lib;$(SolutionDir)..\bin\$(PlatformName)\$(ConfigurationName)\commonlib;$(SolutionDir)..\bin\$(PlatformName)\$(ConfigurationName)\hal</AdditionalLibraryDirectories>
+      <AdditionalDependencies>distorm.lib;Acpica.lib;CommonLib.lib;hal.lib</AdditionalDependencies>
+      <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
+      <GenerateDebugInformation>Debug</GenerateDebugInformation>
+      <GenerateMapFile>true</GenerateMapFile>
+      <MapFileName>$(OutDir)\MINIHVEX.map</MapFileName>
+      <MapExports>true</MapExports>
+      <SubSystem>Native</SubSystem>
+      <EntryPointSymbol>__MultiBootEntryPoint</EntryPointSymbol>
+      <BaseAddress>0x0000010002000000</BaseAddress>
+      <FixedBaseAddress>false</FixedBaseAddress>
+      <AdditionalOptions>/ALIGN:0x200 /IGNORE:4108 /MERGE:.mboot=.text %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+    <YASM>
+      <Defines>DEBUG</Defines>
+    </YASM>
+    <PostBuildEvent>
+      <Command>postbuild\post_hv.cmd $(ProjectName) $(ProjectDir) $(PlatformName) $(ConfigurationName) $(ProjectName)  $(TargetName) $(TargetExt)</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <BuildLog>
+      <Path>$(IntDir)log\BuildLog.htm</Path>
+    </BuildLog>
+    <ClCompile>
+      <OmitFramePointers>
+      </OmitFramePointers>
+      <PreprocessorDefinitions>X64;AMD64;NDEBUG;WIN64</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <MinimalRebuild>false</MinimalRebuild>
+      <ExceptionHandling>false</ExceptionHandling>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <ControlFlowGuard>false</ControlFlowGuard>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <EnableParallelCodeGeneration>false</EnableParallelCodeGeneration>
+      <FloatingPointExceptions>false</FloatingPointExceptions>
+      <CreateHotpatchableImage>false</CreateHotpatchableImage>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <OpenMPSupport>false</OpenMPSupport>
+      <AdditionalIncludeDirectories>$(SolutionDir)\..\distorm\inc;$(SolutionDir)\..\acpi\inc;$(SolutionDir)\..\inc;$(SolutionDir)\minihvex\headers;$(SolutionDir)\commonlib\inc;$(SolutionDir)\hal\inc</AdditionalIncludeDirectories>
+      <CompileAsManaged>false</CompileAsManaged>
+      <WarningLevel>Level4</WarningLevel>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <DisableSpecificWarnings>4313;4474;4476;4477;</DisableSpecificWarnings>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <EnablePREfast>true</EnablePREfast>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <ShowIncludes>false</ShowIncludes>
+      <Optimization>MaxSpeed</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
+      <AssemblerOutput>NoListing</AssemblerOutput>
+    </ClCompile>
+    <Link>
+      <OutputFile>$(OutDir)\MINIHVEX.bin</OutputFile>
+    </Link>
+    <Link>
+      <AdditionalLibraryDirectories>$(SolutionDir)\..\distorm\lib;$(SolutionDir)\..\acpi\lib;$(SolutionDir)..\bin\$(PlatformName)\$(ConfigurationName)\commonlib;$(SolutionDir)..\bin\$(PlatformName)\$(ConfigurationName)\hal</AdditionalLibraryDirectories>
+      <AdditionalDependencies>distorm.lib;Acpica.lib;CommonLib.lib;hal.lib</AdditionalDependencies>
+      <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
+      <GenerateDebugInformation>Debug</GenerateDebugInformation>
+      <GenerateMapFile>true</GenerateMapFile>
+      <MapFileName>$(OutDir)\MINIHVEX.map</MapFileName>
+      <MapExports>true</MapExports>
+      <SubSystem>Native</SubSystem>
+      <EntryPointSymbol>__MultiBootEntryPoint</EntryPointSymbol>
+      <BaseAddress>0x0000010002000000</BaseAddress>
+      <FixedBaseAddress>false</FixedBaseAddress>
+      <AdditionalOptions>/ALIGN:0x200 /IGNORE:4108 /MERGE:.mboot=.text %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+    <YASM>
+      <Defines>NDEBUG</Defines>
+    </YASM>
+    <PostBuildEvent>
+      <Command>postbuild\post_hv.cmd $(ProjectName) $(ProjectDir) $(PlatformName) $(ConfigurationName) $(ProjectName)  $(TargetName) $(TargetExt)</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="minihvex\acpi_interface.c" />
+    <ClCompile Include="minihvex\acpi_osl.c" />
+    <ClCompile Include="minihvex\apic.c" />
+    <ClCompile Include="minihvex\check_input.c" />
+    <ClCompile Include="minihvex\dmp_common.c" />
+    <ClCompile Include="minihvex\hv_assert.c" />
+    <ClCompile Include="minihvex\cpumu.c" />
+    <ClCompile Include="minihvex\display.c" />
+    <ClCompile Include="minihvex\dmp_apic.c" />
+    <ClCompile Include="minihvex\dmp_cpu.c" />
+    <ClCompile Include="minihvex\dmp_memory.c" />
+    <ClCompile Include="minihvex\dmp_minihv.c" />
+    <ClCompile Include="minihvex\dmp_mtrr.c" />
+    <ClCompile Include="minihvex\dmp_multiboot.c" />
+    <ClCompile Include="minihvex\dmp_pci.c" />
+    <ClCompile Include="minihvex\dmp_vmcs.c" />
+    <ClCompile Include="minihvex\hv_heap.c" />
+    <ClCompile Include="minihvex\idt.c" />
+    <ClCompile Include="minihvex\idt_handlers.c" />
+    <ClCompile Include="minihvex\init64.c" />
+    <ClCompile Include="minihvex\init_asm.c" />
+    <ClCompile Include="minihvex\int15_memory.c" />
+    <ClCompile Include="minihvex\lock.c" />
+    <ClCompile Include="minihvex\mtrr.c" />
+    <ClCompile Include="minihvex\paging_tables.c" />
+    <ClCompile Include="minihvex\pci.c" />
+    <ClCompile Include="minihvex\pit.c" />
+    <ClCompile Include="minihvex\segment.c" />
+    <ClCompile Include="minihvex\serial.c" />
+    <ClCompile Include="minihvex\task.c" />
+    <ClCompile Include="minihvex\vmcs.c" />
+    <ClCompile Include="minihvex\vmexit.c" />
+    <ClCompile Include="minihvex\vmguest.c" />
+    <ClCompile Include="minihvex\vmmemory.c" />
+    <ClCompile Include="minihvex\vmx_operations.c" />
+    <ClCompile Include="minihvex\vmx_capability.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\inc\vmexit_reason.h" />
+    <ClInclude Include="..\inc\vmexit_stats.h" />
+    <ClInclude Include="minihvex\headers\acpi_interface.h" />
+    <ClInclude Include="minihvex\headers\apic.h" />
+    <ClInclude Include="minihvex\headers\dmp_common.h" />
+    <ClInclude Include="minihvex\headers\hv_assert.h" />
+    <ClInclude Include="minihvex\headers\check_input.h" />
+    <ClInclude Include="minihvex\headers\cpumu.h" />
+    <ClInclude Include="minihvex\headers\data.h" />
+    <ClInclude Include="minihvex\headers\display.h" />
+    <ClInclude Include="minihvex\headers\dmp_apic.h" />
+    <ClInclude Include="minihvex\headers\dmp_cpu.h" />
+    <ClInclude Include="minihvex\headers\dmp_memory.h" />
+    <ClInclude Include="minihvex\headers\dmp_minihv.h" />
+    <ClInclude Include="minihvex\headers\dmp_mtrr.h" />
+    <ClInclude Include="minihvex\headers\dmp_multiboot.h" />
+    <ClInclude Include="minihvex\headers\dmp_pci.h" />
+    <ClInclude Include="minihvex\headers\dmp_vmcs.h" />
+    <ClInclude Include="minihvex\headers\ept.h" />
+    <ClInclude Include="minihvex\headers\hv_heap.h" />
+    <ClInclude Include="minihvex\headers\idt.h" />
+    <ClInclude Include="minihvex\headers\idt_handlers.h" />
+    <ClInclude Include="minihvex\headers\init_asm.h" />
+    <ClInclude Include="minihvex\headers\int15_memory.h" />
+    <ClInclude Include="minihvex\headers\ipc.h" />
+    <ClInclude Include="minihvex\headers\ipc_handler.h" />
+    <ClInclude Include="minihvex\headers\lock.h" />
+    <ClInclude Include="minihvex\headers\log.h" />
+    <ClInclude Include="minihvex\headers\minihv.h" />
+    <ClInclude Include="minihvex\headers\mtrr.h" />
+    <ClInclude Include="minihvex\headers\multiboot.h" />
+    <ClInclude Include="minihvex\headers\paging_tables.h" />
+    <ClInclude Include="minihvex\headers\pci.h" />
+    <ClInclude Include="minihvex\headers\pit.h" />
+    <ClInclude Include="minihvex\headers\processor.h" />
+    <ClInclude Include="minihvex\headers\segment.h" />
+    <ClInclude Include="minihvex\headers\serial.h" />
+    <ClInclude Include="minihvex\headers\task.h" />
+    <ClInclude Include="minihvex\headers\vmcs.h" />
+    <ClInclude Include="minihvex\headers\vmexit.h" />
+    <ClInclude Include="minihvex\headers\vmguest.h" />
+    <ClInclude Include="minihvex\headers\vmmemory.h" />
+    <ClInclude Include="minihvex\headers\vmx_operations.h" />
+    <ClInclude Include="minihvex\headers\vmx_capability.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <YASM Include="minihvex\yasm\exports.yasm">
+      <FileType>Document</FileType>
+    </YASM>
+    <YASM Include="minihvex\yasm\isr.yasm">
+      <FileType>Document</FileType>
+    </YASM>
+    <YASM Include="minihvex\yasm\lib.yasm">
+      <FileType>Document</FileType>
+    </YASM>
+    <YASM Include="minihvex\yasm\lower_mem.yasm">
+      <FileType>Document</FileType>
+    </YASM>
+    <YASM Include="minihvex\yasm\vm_ops.yasm">
+      <FileType>Document</FileType>
+    </YASM>
+    <YASM Include="minihvex\yasm\_init32.yasm">
+      <FileType>Document</FileType>
+    </YASM>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="minihvex\yasm\defines.yasm" />
+    <None Include="minihvex\yasm\macros.yasm" />
+    <None Include="minihvex\yasm\structs.yasm" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(SolutionDir)..\tools\vsyasm\vsyasm.targets" />
+  </ImportGroup>
+</Project>

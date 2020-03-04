@@ -1,0 +1,176 @@
+%ifndef _DEFINES_ASM_
+%define _DEFINES_ASM_
+
+;-----------------------------------------------------------------------;
+; DEFINES
+;-----------------------------------------------------------------------;
+
+; 1 MULTIBOOT DEFINES
+;-----------------------------------------------------------------------;
+
+;
+; we use hardcoded address space / map for our data structures, the multiboot header and the entry point
+; the plain binary image is loaded to 0x00200000 (2MB), the entry point is fixed to 0x00209000
+;
+%define     MULTIBOOT_HEADER_SIZE       48                                      ; check out '3.1.1 The layout of Multiboot header'
+%define     MULTIBOOT_HEADER_MAGIC      0x1BADB002
+%define     MULTIBOOT_HEADER_FLAGS      0x00010001                              ; flags[16] | flags[0]
+%define     MULTIBOOT_LOADER_MAGIC      0x2BADB002
+
+%define     MULTIBOOT_ENTRY_POINT       KERNEL_CODE_START_ADDRESS               ; at EIP = 0x20C000 we start the execution (32 bit, non-paged)
+
+%define     MULTIBOOT_INFO_STRUCT_SIZE  90
+
+%define     MULTIBOOT_INFO_ADDRESS      MULTIBOOT_BASE + MULTIBOOT_HEADER_SIZE
+
+; 2 MINIHV DEFINES
+;-----------------------------------------------------------------------;
+%define     PA_2_VA_DIFFERENCE          0x0000010000000000
+%define     KERNEL_BASE_VIRTUAL         (PA_2_VA_DIFFERENCE + KERNEL_BASE)      ; magic 1T
+%define     KERNEL_BASE                 0x02000000                              ; 32 MB
+%define     KERNEL_LENGTH               0x00100000                              ; 1 MB
+%define     KERNEL_XE_NO_OF_PAGES       ((KERNEL_LENGTH+PAGE_SIZE-1)/PAGE_SIZE)
+%define     KERNEL_XD_NO_OF_PAGES       (PTE_PER_TABLE-KERNEL_XE_NO_OF_PAGES)
+
+; Number of pages which will not be mapped between (0,KernelBase)
+; The reason for the -1 is that we subtract the memory mapped by the first PD(2MB)
+%define     KERNEL_NO_OF_PAGES_BEFORE   ((KERNEL_BASE/PD_ENTRY_LENGTH)-1)
+
+; Number of pages which will not be mapped between (KernelBase,1Gb)
+; The reason for the -2 is the PD for the first 2MB and the PD for the kernel
+%define     KERNEL_NO_OF_PAGES_AFTER    (PTE_PER_TABLE-KERNEL_NO_OF_PAGES_BEFORE-2)
+
+%define     INITIAL_TOP_OF_STACK        TOP_OF_STACK 
+%define     INITIAL_TOP_OF_STACK_1T     (PA_2_VA_DIFFERENCE + TOP_OF_STACK)
+
+%define     ADDRESS_TRAMP_32CODE        MULTIBOOT_ENTRY_POINT + 0x200
+
+; 3 GDT DEFINES
+;-----------------------------------------------------------------------;
+%define     GDT_DESC(g,x)               (g %+ . %+ x - g)
+
+%define     GDT_DESC_DATA64             0x00CF93000000FFFF
+%define     GDT_DESC_CODE64             0x002F9B000000FFFF
+%define     GDT_DESC_DATA32             0x00CF93000000FFFF
+%define     GDT_DESC_CODE32             0x00CF9B000000FFFF
+%define     GDT_DESC_DATA16             0x000093000000FFFF
+%define     GDT_DESC_CODE16             0x00009B000000FFFF
+
+; 4 Upper MEMORY LAYOUT DEFINES
+;-----------------------------------------------------------------------;
+%define     MULTIBOOT_SECTION_SIZE              (0x100 - MULTIBOOT_HEADER_SIZE - MULTIBOOT_INFO_STRUCT_SIZE)
+%define     GDT_SECTION_SIZE                    (0x200 - ( __gdtr.end - __gdt_base))
+%define     PARAMETERS_SECTION_SIZE             (0x900)
+
+%define     MULTIBOOT_BASE                      (KERNEL_BASE + 0x400)           ; take into account the MZ/PE header + 0x400 allignment
+                                                                                ; the multiboot header begins in the _text section
+%define     GDT_BASE_ADDRESS                    (MULTIBOOT_BASE+0x100)
+%define     PARAMETERS_BASE_ADDRESS             (GDT_BASE_ADDRESS+0x200)
+%define     PML4_TABLE_BASE                     (PARAMETERS_BASE_ADDRESS + 0x900)
+%define     PDP_TABLE_BASE                      (PML4_TABLE_BASE + 0x1000)
+%define     PD_TABLE_LOW_1GB_BASE               (PDP_TABLE_BASE + 0x1000)
+%define     PT_TABLE_LOW_2MB_BASE               (PD_TABLE_LOW_1GB_BASE + 0x1000)
+%define     PT_TABLE_KERNEL_MAPPING_BASE        (PT_TABLE_LOW_2MB_BASE + 0x1000)
+%define     TEMP_COMMAND_LINE_ADDRESS           (PT_TABLE_KERNEL_MAPPING_BASE + 0x1000)
+%define     TOP_OF_STACK                        (TEMP_COMMAND_LINE_ADDRESS + 0x2000)
+%define     TRAMPOLINE_START_ADDRESS            TOP_OF_STACK
+%define     KERNEL_CODE_START_ADDRESS           (TRAMPOLINE_START_ADDRESS + 0x2000)
+
+; 5 LOWER MEMORY LAYOUT DEFINES
+;-----------------------------------------------------------------------;
+%define     LOW_MEMORY_ADDRESS                  0x00008000
+%define     LOW_GDT_BASE_ADDRESS                LOW_MEMORY_ADDRESS
+%define     LOW_PM32_RM16_ADDRESS               LOW_GDT_BASE_ADDRESS + 0x100
+%define     LOW_RM16_PM32_ADDRESS               LOW_PM32_RM16_ADDRESS + 0x100
+%define     LOW_RETRIEVE_INT15_MAP_ADDRESS      LOW_RM16_PM32_ADDRESS + 0x100
+%define     LOW_CALL_TO_RM_ADDRESS              LOW_RETRIEVE_INT15_MAP_ADDRESS + 0x100
+%define     LOW_PRELOADER_ADDRESS               LOW_CALL_TO_RM_ADDRESS + 0x100
+%define     LOW_MEMORY_MAP_NUMBER_ADDRESS       LOW_PRELOADER_ADDRESS + PRELOADER_CODE_SIZE
+%define     LOW_MEMORY_MAP_ENTRIES_ADDRESS      LOW_MEMORY_MAP_NUMBER_ADDRESS + 0x10
+%define     MAX_NO_OF_MEMORY_MAP_ENTRIES        (( LOW_MEMORY_TRAMP_START - LOW_MEMORY_MAP_ENTRIES_ADDRESS ) / INT15_MEMORY_MAP_ENTRY_size )
+%define     PRELOADER_CODE_SIZE                 0x200
+
+%define     LOW_MEMORY_TRAMP_START              LOW_MEMORY_ADDRESS + PAGE_SIZE
+%define     LOW_MEMORY_CHECK_A20_GATE           LOW_MEMORY_TRAMP_START + 0x100
+%define     LOW_MEMORY_ENABLE_A20_GATE          LOW_MEMORY_CHECK_A20_GATE + 0x100
+%define     LOW_MEMORY_TRAMP32_START            LOW_MEMORY_ENABLE_A20_GATE + 0x100
+
+%define     LOW_MEMORY_LENGTH                   0x2000
+
+%define     LOW_MEMORY_STACK_TOP                LOW_MEMORY_ADDRESS
+
+%define     TRAMPOLINE_CODE_BASE                TRAMPOLINE_START_ADDRESS
+
+%define     INT15_MEMORY_MAP_ENTRY_MIN_SIZE     0x14
+
+%define     REAL_MODE_IVT_LIMIT                 0x3FF
+%define     REAL_MODE_IVT_BASE                  0x0
+
+%define     p16(n)                              bp + 4 + 2*(n)
+%define     p32(n)                              ebp + 8 + 4*(n)
+%define     p64(n)                              rbp + 0x10 + 8*(n)
+
+; 6 PAGING STRUCTURES DEFINES
+;-----------------------------------------------------------------------;
+%define     P_BIT                       (1<<0)
+%define     RW_BIT                      (1<<1)
+%define     US_BIT                      (1<<2)
+%define     PWT_BIT                     (1<<3)
+%define     PCD_BIT                     (1<<4)
+%define     A_BIT                       (1<<5)
+%define     PS_BIT                      (1<<7)
+
+; superior DWORD from paging structure entry
+%define     XD_BIT_INDEX                31
+
+%define     PD_ENTRY_LENGTH             0x00200000               ; 2 MB
+%define     PAGE_SIZE                   0x1000                   ; 4KB
+
+%define     PTE_PER_TABLE               0x200
+
+; 7 CONTROL & STATUS REGISTER DEFINES
+;-----------------------------------------------------------------------;
+
+; CR0
+%define     CR0_PE                      0x00000001
+%define     CR0_NE                      0x00000020
+%define     CR0_NW                      0x20000000                      
+%define     CR0_CD                      0x40000000
+%define     CR0_PG                      0x80000000
+
+; CR4
+%define     CR4_PAE                     0x00000020
+
+; EFLAGS masks
+%define     ID_FLAG                     (1<<21)
+
+; EFER
+%define     IA32_EFER                   0xC0000080
+%define     IA32_EFER_LME               (1<<8)
+%define     IA32_EFER_NXE               (1<<11)
+
+; 8 VMX DEFINES
+;-----------------------------------------------------------------------;
+%define     MBR_LOAD_ADDRESS            0x7C00
+
+%define     DUMMY_AX                    0x3731
+%define     DUMMY_CX                    0x1312
+%define     DUMMY_DX                    0x11AB
+%define     DUMMY_BX                    0xAF91
+%define     DUMMY_SP                    0xABCC
+%define     DUMMY_BP                    0x311D
+%define     DUMMY_SI                    0xE22A
+%define     DUMMY_DI                    0x666A
+
+%define     INT15_E820_CODE             0xE820
+%define     INT15_E820_SIGNATURE        'PAMS'
+
+; 9 MBR DEFINES
+;-----------------------------------------------------------------------;
+
+%define     MBR_MAGIC_SIGNATURE         'ALEX'
+%define     MBR_PARTITION_ENTRY_SIZE    0x10
+%define     MBR_SIGNATURE_SIZE          2
+%define     MBR_SIZE                    0x200
+
+%endif ; _DEFINES_ASM_

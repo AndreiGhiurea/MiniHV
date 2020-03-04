@@ -1,0 +1,579 @@
+;
+; PXE 32 bit loader code
+;
+; for documentation check out MULTIBOOT 0.6.96 specs
+; http://www.gnu.org/software/grub/manual/multiboot/multiboot.html
+;
+
+; The memory layout is the following one:
+;
+; at KERNEL_BASE + 0x400:       Multiboot header
+; at KERNEL_BASE + 0x500:       GDT
+; at KERNEL_BASE + 0x700:       Space reserved for the parameters structure
+;                               this structure is passed to the C code
+; at KERNEL_BASE + 0x1000:      PML4
+; at KERNEL_BASE + 0x2000:      PDP
+; at KERNEL_BASE + 0x3000:      PD
+; at KERNEL_BASE + 0x4000:      PT describing low 2MB
+; at KERNEL_BASE + 0x5000:      PT describing first 2MB of HV memory
+; at KERNEL_BASE + 0x6000:      Temporary command line
+; at KERNEL_BASE + 0x8000:      Top of the Stack
+; at KERNEL_BASE + 0x8000:      AP trampoline code
+; at KERNEL_BASE + 0xA000:      Kernel Code
+
+%include "lib.yasm"
+
+global __MultiBootEntryPoint
+global __gdtr
+
+; C function which will be called from yasm
+extern Init64
+extern HalActivateFpu
+
+;
+; multiboot starts in 32 bit PROTECTED MODE, without paging beeing enabled (FLAT)
+; check out '3.2 Machine state' from docs
+;
+[BITS 32]
+%define         GDT_TABLE_ADDRESS       (GDT_BASE_ADDRESS + ( __gdt_base.end - __gdt_base ) )    ; keep in mind: all those adresses are fixed, hardcorded
+                                                                                                 ; we choose to do so, and we MUST ensure this .yasm file generates those values
+SECTION .mboot
+;;
+;; KERNEL_BASE + 0x400 (this must be the first stuff to be linked into the code segment)
+;;
+multiboot_header:                                       ; check out '3.1.1 The layout of Multiboot header'
+magic           dd MULTIBOOT_HEADER_MAGIC                                   ; 0x0
+flags           dd MULTIBOOT_HEADER_FLAGS                                   ; 0x4
+checksum        dd 0-(MULTIBOOT_HEADER_MAGIC + MULTIBOOT_HEADER_FLAGS)      ; 0x8
+header_addr     dd MULTIBOOT_BASE                                           ; 0xc
+load_addr       dd KERNEL_BASE                                              ; 0x10
+load_end_addr   dd 0                                                        ; 0x14
+bss_end_addr    dd 0                                                        ; 0x18
+entry_addr      dd MULTIBOOT_ENTRY_POINT                                    ; 0x1c
+mode_type       dd 0
+width           dd 0
+height          dd 0
+depth           dd 0
+
+gMultiBootStruct:                                       ; reserve space for the multiboot info structure (will copy here)
+times MULTIBOOT_INFO_STRUCT_SIZE db 13                   ; check out '3.3 Boot information format'
+
+;; leave 0x40 bytes for GDT stuff
+times MULTIBOOT_SECTION_SIZE db 'A'
+
+;;
+;; KERNEL_BASE + 0x500
+;;
+__gdt_base:                                             ; GDT with 1+6+2 entries
+
+.null               dq  0
+.data64             dq  GDT_DESC_DATA64                 ; Data segment
+.code64             dq  GDT_DESC_CODE64                 ; Code segment, 64 bit, execute / read, present
+.data32             dq  GDT_DESC_DATA32
+.code32             dq  GDT_DESC_CODE32
+.data16             dq  GDT_DESC_DATA16
+.code16             dq  GDT_DESC_CODE16
+.tss_des0           dq  0                               ;   we reserve 2 QWORDs for the TSS
+.tss_des1           dq  0                               ;   descriptor
+.end
+
+; size and address of __gdt_base                        ; base is 0x2004D8 (GDT_TABLE_ADDRESS)
+__gdtr:
+.gdt_size        dw  ( __gdt_base.end - __gdt_base - 1 )
+.gdt_address     dq  GDT_BASE_ADDRESS
+.end
+
+;;
+;; KERNEL_BASE + 0x0600
+;;
+times GDT_SECTION_SIZE db 'B'
+; memory map as reported by E820 map and retrieved by the bootloader for us
+; we copy here the memory map from the location specified in the MultiBoot Information structure
+; check out '3.3 Boot information format' and also 'http://en.wikipedia.org/wiki/E820'
+; IMPORTANT: this allows us at most 287 entries of default size (0x18 / entry, 4 bytes initially for length)
+gAsmParameters:
+times PARAMETERS_SECTION_SIZE db 0
+
+
+;;
+;; KERNEL_BASE + 0x1000 - PML4
+;; PML4_TABLE_BASE
+;
+; setup page tables to identity map the 0-8M physical space
+; we also need to map the 1T (0x0000`0100`0000`0000-0x0000`0100`001F`FFFF) virtual space to 2-4M physical space for x64
+;
+; IMPORTANT: here we DO assume that there is always a continous 2-6 physical RAM present and available
+;
+__pml4_table:
+dq              PDP_TABLE_BASE | P_BIT | RW_BIT   ; entry for 0 - 512G, PDP
+dq 0
+dq              PDP_TABLE_BASE | P_BIT | RW_BIT   ; entry for 1T - 1,5T, PDP
+times 509 dq 0
+
+;; KERNEL_BASE + 0x2000 - PDP for 1T mapping
+;; PDP_TABLE_BASE
+__pdp_table_1t:
+dq              PD_TABLE_LOW_1GB_BASE | P_BIT | RW_BIT
+times 511 dq 0
+
+;; KERNEL_BASE + 0x3000 - PD #1
+;; PD_TABLE_LOW_1GB_BASE
+__pd_table1:
+dq              PT_TABLE_LOW_2MB_BASE | P_BIT | RW_BIT   ; entry for 0 - 2M, PT, using PT to avoid mapping first 4K (do NOT map NULL pointer)
+times KERNEL_NO_OF_PAGES_BEFORE dq 0
+dq              PT_TABLE_KERNEL_MAPPING_BASE | P_BIT | RW_BIT ; entry for 32M - 34M
+times KERNEL_NO_OF_PAGES_AFTER dq 0
+
+;; KERNEL_BASE + 0x4000 - PT
+;; PT_TABLE_LOW_2MB_BASE
+__pt_table_low_2mb:
+times 512 dq 0                          ; P = 0, NOT preset, to avoid NULL pointers
+                                        ; will be dynamically generated
+
+;; KERNEL_BASE + 0x5000 - PT
+;; PT_TABLE_KERNEL_MAPPING_BASE
+__pt_table_low_kernel:
+times 512 dq 0                          ; P = 0, NOT preset, to avoid NULL pointers
+                                        ; will be dynamically generated
+
+;;
+;; KERNEL_BASE + 0x6000 - temporary storage for PXE command line (will be reused as 1K more for stack)
+;; TEMP_COMMAND_LINE_ADDRESS
+__TempCmdLine:
+times 0x400 db 0xDD
+
+
+;;
+;; KERNEL_BASE + 0x6400 - we reserve a 8K stack for the initial thread (1K is above)
+;; TOP-OF-STACK is KERNEL_BASE + 0x8000
+;;
+__stack:
+times 0x1C00 db 0xCC
+
+
+;;
+;; KERNEL_BASE + 0x8000 - AP trampoline code, 16 bit part
+;; TRAMPOLINE_START_ADDRESS
+;; NOTE: this MUST be copied down below 1 MB (at AP_TRAMPOLINE_16B_BASE)
+;;       and has the sole role to switch to flat 32 bit PM, and jump to __ApTrampoline32to64
+;;
+%include "lower_mem.yasm"
+
+
+;;
+;; KERNEL_BASE + 0xA000 - code
+;; KERNEL_CODE_START_ADDRESS
+[BITS 32]
+; code_start - the multiboot loader transfers execution here (based on the entry_addr in the multiboot header above)
+__MultiBootEntryPoint:
+
+    ; make sure interrupts are disabled
+    cli
+
+    ; simply echo something to the screen, by direct memory write to 80x25 text mode VGA video mem (0xB8000)
+    mov     ecx, '1111'                     ; signal our presence
+    mov     [0x000B8000], ecx
+
+    ; setup initial ESP, to have stack
+    mov     esp, LOW_MEMORY_STACK_TOP
+
+    ; check if we were loaded by multiboot
+    cmp     eax, MULTIBOOT_LOADER_MAGIC
+    jz      .mb_load
+
+    ; if we get here it means we were not loaded by the MB loader
+    ; we don't know any other way of loading
+    mov     eax, 'EEEE'                     ; signal error
+    mov     [0x000B8000], eax
+    cli
+    hlt
+
+.mb_load:
+
+    ; multiboot loaded us
+    mov     eax, '2222'                     ; signal our presence
+    mov     [0x000B8004], eax
+
+    ; it is best to load our own GDT
+    lgdt    [GDT_TABLE_ADDRESS]
+
+    jmp     GDT_DESC(__gdt_base,code32):MULTIBOOT_ENTRY_POINT + ( __MultiBootEntryPoint.new_gdt - __MultiBootEntryPoint )
+.new_gdt:
+    mov     ax,         GDT_DESC(__gdt_base,data32)
+    mov     ss,         ax
+    mov     ds,         ax
+    mov     es,         ax
+    mov     fs,         ax
+    mov     gs,         ax
+
+
+    ; we want first to check if the CPU supports CPUID
+    pushf
+    pop     eax                 ; eax <- original flags
+    mov     ecx, eax            ; ecx <- save flags value
+    xor     eax, ID_FLAG        ; flip ID value
+    push    eax                 ; push new flags
+    popf                        ; get new flags
+    pushf                       ; put new flags back on stack
+    pop     eax                 ; get new flags in eax
+    xor     eax, ecx            ; we will now have 1 in position 21 if CPUID is available
+    shr     eax, 21             ; isolate ID flag
+    push    ecx                 ; put original flags on stack
+    popf                        ; restore original flags
+    cmp     eax, 1
+    je      .cpuid
+
+    ; we don't have cpuid functionality => useless CPU
+    ; interrupts are disabled at this point => good luck with that :)
+    hlt
+
+.cpuid:
+    ; we copy the structure passed to us by the multiboot loader
+    mov     esi, ebx
+    mov     edi, MULTIBOOT_INFO_ADDRESS
+    mov     ecx, MULTIBOOT_INFO_STRUCT_SIZE
+    cld
+    rep     movsb
+
+    ; we place code under 1MB
+    ; our trampoline
+    mov     esi, TRAMPOLINE_CODE_BASE
+    mov     edi, LOW_MEMORY_ADDRESS
+    mov     ecx, LOW_MEMORY_LENGTH
+    cld
+    rep     movsb
+
+    callproc    CallToRM, LOW_RETRIEVE_INT15_MAP_ADDRESS, 3, 0, LOW_MEMORY_MAP_ENTRIES_ADDRESS, LOW_MEMORY_MAP_NUMBER_ADDRESS
+
+; generate PT for first 2MB, skip the first entry which is the NULL
+    callproc    GeneratePageTable, PT_TABLE_LOW_2MB_BASE + 0x8, PTE_PER_TABLE - 1, 0, 0x1000, PAGE_SIZE, 0
+
+; map kernel code with execute rights
+    callproc    GeneratePageTable, PT_TABLE_KERNEL_MAPPING_BASE, KERNEL_XE_NO_OF_PAGES, 0, KERNEL_BASE, PAGE_SIZE, 0
+
+; map rest of the PD as XD (kernel data)
+    callproc    GeneratePageTable, PT_TABLE_KERNEL_MAPPING_BASE + (KERNEL_XE_NO_OF_PAGES * 0x8), KERNEL_XD_NO_OF_PAGES, 0, KERNEL_BASE + KERNEL_LENGTH, PAGE_SIZE, 1
+
+; after this function call we'll be in 64 bit mode
+    call    PM32_to_PM64
+%ifdef DEBUG
+[bits 64]
+    call PM64_to_PM32
+[bits 32]
+    call PM32_to_PM64
+%endif
+
+[bits 64]
+;
+; now we are using final 1T virtual addresses, full x64, have an 8K stack in place, so are ready to jump to our C code
+;
+call_final:
+    call            PlaceInformationInParameters
+
+    call_func_64    HalActivateFpu
+
+    call_func_64    Init64, QWORD 1, QWORD gAsmParameters
+
+    ; interrupts are up here
+.hlt:
+    hlt
+    jmp .hlt
+.end:
+
+
+; this code will be code from <1MB as part of the trampoline code
+times 0x200 - ( call_final.end - __MultiBootEntryPoint ) db 'L'
+[bits 32]
+tramp_upper:
+    call    PM32_to_PM64
+trampStart_64:
+[bits 64]
+    call_func_64    HalActivateFpu
+
+    call_func_64    ApicInitAPCpu
+
+; we should never get here
+    debug_break
+
+
+; this function takes the processor from 32 bit PM to 64 bit PM
+; we must be in PM32 with Paging disabled when we call this function
+; step1 : disable paging was already done when function was called
+PM32_to_PM64:
+    [bits 32]
+    push        0
+    pushfd
+
+    cli                     ; disable interrupts
+
+    ; step 2
+    ; enable PAE CR4.PAE = 1
+    mov     eax,    cr4
+    or      eax,    CR4_PAE
+    mov     cr4,    eax
+
+    ; step 3
+    ; load CR3 with phycal base address of PML4
+    mov     eax,    PML4_TABLE_BASE
+    mov     cr3,    eax
+
+    ; step 4
+    ; Set IA32_EFER.LME = 1
+    ; also enable NX functionality
+    mov     ecx, IA32_EFER
+    rdmsr
+    or      eax, ( IA32_EFER_LME | IA32_EFER_NXE )
+    wrmsr
+
+    ; load the new GDT and go to real 64-bit mode
+    lgdt    [GDT_TABLE_ADDRESS]
+
+    ; step 5
+    ; enable paging
+    mov     eax, cr0
+    or      eax, (CR0_PG|CR0_NE)        ; also clear CD and NW in case
+    and     eax, ~(CR0_CD | CR0_NW )    ; those flags are set
+    mov     cr0, eax
+
+    ; Vol 3B 8.3
+    ; When an instruction is executed that enables or disables paging (that is,
+    ; changes the PG flag in control register CR0), the instruction should be
+    ; followed by a jump instruction
+
+    ; The Pentium 4, Intel Xeon, and P6 family processors do not require
+    ; the jump operation following the move to register CR0 (because any use of the MOV instruction in a Pentium 4,
+    ; Intel Xeon, or P6 family processor to write to CR0 is completely serializing). However, to maintain backwards
+    ; and forward compatibility with code written to run on other IA-32 processors, it is recommended that the jump
+    ; operation be performed.
+
+    ; CONCLUSION: because we will be running on new processors, we DON't need a jump
+
+;
+; now we should be in 64-bit compatibility mode
+;
+[BITS 64]
+    mov     rcx, [rsp]              ; we save the flags
+    mov     edx, DWORD [rsp+8]      ; we need to add the VA address base
+
+
+
+    ; set the cs
+    mov     esp, INITIAL_TOP_OF_STACK
+    xor     eax, eax
+    mov     ax, GDT_DESC(__gdt_base,code64)
+    push    rax                     ; this is a MUST, because retf will pop out 4 bytes for CS (OPE found out this ;-)
+                                    ; and 'push rax' actually means 'push eax', because we still run in 32 bit compat mode
+    call    $ + 5                   ; place return EIP onto the stack
+    mov     eax, 10                 ; instrux length to continue right after 'retf'
+    add     [rsp], eax
+    retf                            ; actually a retfq ( also uses CS saved on stack besides RA )
+
+;
+; we are in true 64-bit code, but still using the identity mappings, NOT the final 1T VA
+;
+    ; set also fs, gs
+    ; NOTE: ds, es, ss are NOT used on x64
+    mov     ax, GDT_DESC(__gdt_base,data64)
+    mov     fs, ax
+    mov     gs, ax
+
+    ; TOFIND: should SS be 0 in x64?
+    mov     ss, ax
+
+    ; setup the stack
+    mov     rsp, INITIAL_TOP_OF_STACK_1T    ; 8K stack, already using the 1T VA addresses
+    sub     rsp, 0x20
+
+    ; switch to final 1T virtual addresses (0x0000`0100`0000`0000)
+    call    $ + 5                   ; place return RIP onto the stack
+    mov     rax, KERNEL_BASE_VIRTUAL - KERNEL_BASE
+    add     qword [rsp], rax
+    add     qword [rsp], 0x14       ; instrux length to continue right after 'retn'
+    retn
+
+    push    rcx
+    popfq                           ; we restore the original flags
+
+    mov     rcx, rdx                            ; PA's 32Mb-64Mb are mapped to 1T+
+    sub     rcx, KERNEL_BASE                    ; that's why we subtract the KERNEL_BASE
+    mov     rdx, QWORD KERNEL_BASE_VIRTUAL      ; so that we get the VA pointing to the same
+    add     rdx, rcx                            ; PA
+
+    sub     rsp, 4
+
+    mov     [rsp], rdx
+
+    ret
+
+
+PM64_to_PM32:
+[bits 64]
+    ; we are in true 64 bit mode using 1T+ VA's
+
+    ; first step we should go back to the identity mappings
+    mov     rbp,    [rsp]       ; we save original RA
+    mov     rsp,    INITIAL_TOP_OF_STACK
+    mov     [rsp],  rbp
+
+    xor     eax, eax
+    mov     ax, GDT_DESC(__gdt_base,code64)
+    push    rax                     ; this is a MUST, because retf will pop out 4 bytes for CS (OPE found out this ;-)
+                                    ; and 'push rax' actually means 'push eax', because we still run in 32 bit compat mode
+    call    $ + 5                   ; place return EIP onto the stack
+    mov     eax, 10                 ; instrux length to continue right after 'retf'
+    add     [rsp], eax
+    retf                            ; actually a retfq ( also uses CS saved on stack besides RA )
+
+    ; now we are using identity mappings
+    xor     eax, eax
+    mov     ax, GDT_DESC(__gdt_base,code32)
+    push    rax                     ; this is a MUST, because retf will pop out 4 bytes for CS (OPE found out this ;-)
+                                    ; and 'push rax' actually means 'push eax', because we still run in 32 bit compat mode
+
+    call    $ + 5                   ; place return EIP onto the stack
+
+    mov     eax,  ( KERNEL_BASE - KERNEL_BASE_VIRTUAL ) + 10                ; instrux length to continue right after 'retf'
+    add     [rsp], eax
+    retf                            ; actually a retfq ( also uses CS saved on stack besides RA )
+
+    ; now we are in compatibility mode
+
+    mov     rax,    cr0
+    and     eax,    ~( CR0_CD | CR0_NW | CR0_PG )       ; disable Paging, CD and NW
+    mov     cr0,    rax
+
+    ; Set IA32_EFER.LME = 0
+    mov     ecx, IA32_EFER
+    rdmsr
+    and      eax, ~IA32_EFER_LME
+    wrmsr
+
+    ; We also need to disable PAE
+    mov     rax,    cr4
+    and     eax,    ~( CR4_PAE )
+    mov     cr4,    rax
+
+    xor     eax, eax
+    mov     ax, GDT_DESC(__gdt_base,code32)
+    push    rax                     ; this is a MUST, because retf will pop out 4 bytes for CS (OPE found out this ;-)
+                                    ; and 'push rax' actually means 'push eax', because we still run in 32 bit compat mode
+    call    $ + 5                   ; place return EIP onto the stack
+    mov     eax, 10                 ; instrux length to continue right after 'retf'
+    add     [rsp], eax
+    retf                            ; actually a retfq ( also uses CS saved on stack besides RA )
+
+[bits 32]
+    .bits32:
+
+    ; set the data descriptors
+    mov     ax, GDT_DESC(__gdt_base,data32)
+    mov     ds, ax
+    mov     es, ax
+    mov     ss, ax
+    mov     fs, ax
+    mov     gs, ax
+
+    xor     eax,    eax             ; According to Vol3 9.9.2 placing a zero in CR3
+    mov     cr3,    eax             ; forces a TLB flush
+
+    ; we must subtract the difference (it will only substract the low DWORD)
+    mov     eax,    DWORD( KERNEL_BASE - KERNEL_BASE_VIRTUAL )
+    add     [esp],  eax                                     ; VA to the appropriate PA
+
+    ret     4
+
+
+
+; This function sets up a page table
+; Either it is PDP, or PD or PT
+
+; __cdecl BOOLEAN proc32 GeneratePageTable( DWORD PageTableBaseAddress, DWORD NoOfEntries, DWORD PhysicalAddressHigh, DWORD PhysicalAddressLow, DWORD EntrySize, DWORD ExecuteDisable )
+[bits 32]
+GeneratePageTable:
+    push    ebp
+    mov     ebp,    esp
+
+    push    ebx
+
+    mov     edi,    [p32(0)]    ; address of PT
+    mov     ecx,    [p32(1)]    ; number of PT entries
+    mov     edx,    [p32(2)]    ; starting physical address high
+    mov     eax,    [p32(3)]    ; starting physical address low
+    mov     ebx,    [p32(4)]    ; the size of the memory mapped
+    mov     esi,    [p32(5)]    ; if set => we need to set execute disable bit
+
+    or      eax,    ( RW_BIT | P_BIT )
+
+    ; if esi is 1 => XD will be set, else nothing will happen
+    shl     esi,    XD_BIT_INDEX
+    or      edx,    esi
+
+    ; we clear the direction flag
+    cld
+.loop:
+    cmp     ecx,    0
+    je      .endloop
+
+    ; store the low DWORD
+    stosd
+    xchg    eax,    edx
+
+    ; store the high DWORD
+    stosd
+    xchg    eax,    edx
+
+    ; go to the next physical address
+    add     eax,    ebx
+
+    ; add the carry to EDX (high physical address) if needed
+    adc     edx,    0
+
+    ; decrement the counter (number of page entries to setup)
+    dec     ecx
+    jmp     .loop
+
+.endloop:
+    pop     ebx
+
+    mov     esp,    ebp
+    pop     ebp
+    ret
+
+[bits 64]
+PlaceInformationInParameters:
+; we set the pointer to the multiboot information structure
+    mov     rax,    QWORD gAsmParameters + ASM_PARAMETERS.MultibootInformation
+    mov     rbx,    MULTIBOOT_INFO_ADDRESS
+    mov     [rax],  rbx
+
+    mov     rax,    QWORD gAsmParameters + ASM_PARAMETERS.KernelBaseAddress
+    mov     rbx,    QWORD KERNEL_BASE
+    mov     [rax],  rbx
+
+    mov     rax,    QWORD gAsmParameters + ASM_PARAMETERS.KernelSize
+    mov     rbx,    QWORD KERNEL_LENGTH
+    mov     [rax],  rbx
+
+    mov     rax,    QWORD gAsmParameters + ASM_PARAMETERS.TrampolineEntryPoint
+    mov     ebx,    DWORD LOW_MEMORY_TRAMP_START
+    mov     [rax],  ebx
+
+    mov     rax,    QWORD gAsmParameters + ASM_PARAMETERS.MemoryMapEntries
+    xor     ebx,    ebx
+    mov     bx,     [LOW_MEMORY_MAP_NUMBER_ADDRESS]
+    mov     [rax],  ebx
+
+    mov     rax,    QWORD gAsmParameters + ASM_PARAMETERS.MemoryMapAddress
+    mov     rbx,    LOW_MEMORY_MAP_ENTRIES_ADDRESS
+    mov     [rax],  ebx
+
+    mov     rax,    QWORD gAsmParameters + ASM_PARAMETERS.GuestPreloaderAddress
+    mov     ebx,    DWORD LOW_PRELOADER_ADDRESS
+    mov     [rax],  ebx
+
+    ret
+
+.end:
+
+
+times ( 0xFC00 - ( PlaceInformationInParameters.end - multiboot_header ) ) db 'z'
