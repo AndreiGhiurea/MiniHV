@@ -1,0 +1,19 @@
+﻿  src\_exports.yasm
+  cmos.c
+  gdt.c
+  hal.c
+  hw_fpu.c
+  idt.c
+  ioapic.c
+  lapic.c
+  pci.c
+  pcie.c
+  pci_device.c
+  pic.c
+  pit.c
+  pte.c
+  rtc.c
+  serial.c
+  tss.c
+  vmx.c
+  HAL.vcxproj -> C:\Users\Andrei\Desktop\Repos\MiniHV\src\..\bin\x64\Debug\HAL\HAL.lib

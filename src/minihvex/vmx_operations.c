@@ -201,6 +201,9 @@ VmxStartGuest(
         // it means we have information
 
         ASSERT_INFO(FALSE, "We cannot continue because LAUNCH failed\n");
+        LOGP("Exit error: 0x%X\n", VmxRead(VMCS_EXIT_INSTRUCTION_ERROR));
+
+        DumpCurrentVmcs(NULL);
     }
 
     ASSERT( 0 == vmxResult );

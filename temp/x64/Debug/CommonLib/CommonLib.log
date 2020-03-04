@@ -1,0 +1,36 @@
+﻿  src\_gs_checks.yasm
+  assert.c
+  bitmap.c
+  cl_algorithm.c
+  cl_heap.c
+  common_lib.c
+  event.c
+  gs_checks.c
+  gs_utils.c
+  hash_table.c
+  intutils.c
+  list.c
+  lock_common.c
+  cl_memory.c
+  monlock.c
+  rec_rw_spinlock.c
+  ref_cnt.c
+  rtc_checks.c
+  rw_spinlock.c
+  seh.c
+  spinlock.c
+  cl_string.c
+  stack_dynamic.c
+  stack_interface.c
+  strutils.c
+  time.c
+  CommonLib.vcxproj -> C:\Users\Andrei\Desktop\Repos\MiniHV\src\..\bin\x64\Debug\CommonLib\CommonLib.lib
+C:\Users\Andrei\Desktop\Repos\MiniHV\src\CommonLib\src\cl_algorithm.c(32): warning C26451: Arithmetic overflow: Using operator '*' on a 4 byte value and then casting the result to a 8 byte value. Cast the value to the wider type before calling operator '*' to avoid overflow (io.2).
+C:\Users\Andrei\Desktop\Repos\MiniHV\src\CommonLib\src\cl_algorithm.c(38): warning C26451: Arithmetic overflow: Using operator '*' on a 4 byte value and then casting the result to a 8 byte value. Cast the value to the wider type before calling operator '*' to avoid overflow (io.2).
+C:\Users\Andrei\Desktop\Repos\MiniHV\src\CommonLib\src\cl_algorithm.c(63): warning C26451: Arithmetic overflow: Using operator '*' on a 4 byte value and then casting the result to a 8 byte value. Cast the value to the wider type before calling operator '*' to avoid overflow (io.2).
+C:\Users\Andrei\Desktop\Repos\MiniHV\src\CommonLib\src\cl_algorithm.c(63): warning C26451: Arithmetic overflow: Using operator '*' on a 4 byte value and then casting the result to a 8 byte value. Cast the value to the wider type before calling operator '*' to avoid overflow (io.2).
+C:\Users\Andrei\Desktop\Repos\MiniHV\src\CommonLib\src\rec_rw_spinlock.c(67): warning C26166: Possibly failing to acquire or to hold lock '*Spinlock' in function 'RecRwSpinlockAcquire'.
+C:\Users\Andrei\Desktop\Repos\MiniHV\src\CommonLib\src\rec_rw_spinlock.c(67): warning C26165: Possibly failing to release lock 'Spinlock->RwSpinlock' in function 'RecRwSpinlockAcquire'.
+C:\Users\Andrei\Desktop\Repos\MiniHV\src\CommonLib\src\rec_rw_spinlock.c(101): warning C26167: Possibly releasing unheld lock 'Spinlock->RwSpinlock' in function 'RecRwSpinlockRelease'.
+C:\Users\Andrei\Desktop\Repos\MiniHV\src\CommonLib\src\rec_rw_spinlock.c(101): warning C26165: Possibly failing to release lock '*Spinlock' in function 'RecRwSpinlockRelease'.
+C:\Users\Andrei\Desktop\Repos\MiniHV\src\CommonLib\src\rec_rw_spinlock.c(101): warning C26110: Caller failing to hold lock 'Spinlock->RwSpinlock' before calling function 'RwSpinlockRelease'.

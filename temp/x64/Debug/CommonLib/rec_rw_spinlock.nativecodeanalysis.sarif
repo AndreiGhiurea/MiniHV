@@ -1,0 +1,1286 @@
+{
+  "version": "2.0.0",
+  "$schema": "http://json.schemastore.org/sarif-2.0.0",
+  "runs": [
+    {
+      "results": [
+        {
+          "ruleId": "26166",
+          "message": {
+            "text": "Possibly failing to acquire or to hold lock '*Spinlock' in function 'RecRwSpinlockAcquire'."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "fileLocation": {
+                  "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                },
+                "region": {
+                  "startLine": 67,
+                  "startColumn": 9,
+                  "endLine": 67,
+                  "endColumn": 9
+                }
+              },
+              "fullyQualifiedLogicalName": "RecRwSpinlockAcquire"
+            }
+          ],
+          "codeFlows": [
+            {
+              "threadFlows": [
+                {
+                  "locations": [
+                    {
+                      "step": 0,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 32,
+                            "startColumn": 1
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 1,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 38,
+                            "startColumn": 11
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 2,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 39,
+                            "startColumn": 16
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 3,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 41,
+                            "startColumn": 5
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 4,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 42,
+                            "startColumn": 5
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 5,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 44,
+                            "startColumn": 32
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 6,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 44,
+                            "startColumn": 16
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 7,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 45,
+                            "startColumn": 32
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 8,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 45,
+                            "startColumn": 17
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 9,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 47,
+                            "startColumn": 9
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 10,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 62,
+                            "startColumn": 22
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 11,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 64,
+                            "startColumn": 5
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 12,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 65,
+                            "startColumn": 5
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 13,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 67,
+                            "startColumn": 9
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "26165",
+          "message": {
+            "text": "Possibly failing to release lock 'Spinlock->RwSpinlock' in function 'RecRwSpinlockAcquire'."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "fileLocation": {
+                  "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                },
+                "region": {
+                  "startLine": 67,
+                  "startColumn": 9,
+                  "endLine": 67,
+                  "endColumn": 9
+                }
+              },
+              "fullyQualifiedLogicalName": "RecRwSpinlockAcquire"
+            }
+          ],
+          "codeFlows": [
+            {
+              "threadFlows": [
+                {
+                  "locations": [
+                    {
+                      "step": 0,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 32,
+                            "startColumn": 1
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 1,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 38,
+                            "startColumn": 11
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 2,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 39,
+                            "startColumn": 16
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 3,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 41,
+                            "startColumn": 5
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 4,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 42,
+                            "startColumn": 5
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 5,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 44,
+                            "startColumn": 32
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 6,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 44,
+                            "startColumn": 16
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 7,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 45,
+                            "startColumn": 32
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 8,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 45,
+                            "startColumn": 17
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 9,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 47,
+                            "startColumn": 9
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 10,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 62,
+                            "startColumn": 22
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 11,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 64,
+                            "startColumn": 5
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 12,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 65,
+                            "startColumn": 5
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 13,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 67,
+                            "startColumn": 9
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "26167",
+          "message": {
+            "text": "Possibly releasing unheld lock 'Spinlock->RwSpinlock' in function 'RecRwSpinlockRelease'."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "fileLocation": {
+                  "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                },
+                "region": {
+                  "startLine": 101,
+                  "startColumn": 9,
+                  "endLine": 101,
+                  "endColumn": 61
+                }
+              },
+              "fullyQualifiedLogicalName": "RecRwSpinlockRelease"
+            }
+          ],
+          "codeFlows": [
+            {
+              "threadFlows": [
+                {
+                  "locations": [
+                    {
+                      "step": 0,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 77,
+                            "startColumn": 1
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 1,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 83,
+                            "startColumn": 11
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 2,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 85,
+                            "startColumn": 5
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 3,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 86,
+                            "startColumn": 5
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 4,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 86,
+                            "startColumn": 5
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 5,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 88,
+                            "startColumn": 32
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 6,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 88,
+                            "startColumn": 17
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 7,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 90,
+                            "startColumn": 9
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 8,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 96,
+                            "startColumn": 22
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 9,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 98,
+                            "startColumn": 26
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 10,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 100,
+                            "startColumn": 9
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 11,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 101,
+                            "startColumn": 26
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "26165",
+          "message": {
+            "text": "Possibly failing to release lock '*Spinlock' in function 'RecRwSpinlockRelease'."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "fileLocation": {
+                  "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                },
+                "region": {
+                  "startLine": 101,
+                  "startColumn": 9,
+                  "endLine": 101,
+                  "endColumn": 61
+                }
+              },
+              "fullyQualifiedLogicalName": "RecRwSpinlockRelease"
+            }
+          ],
+          "codeFlows": [
+            {
+              "threadFlows": [
+                {
+                  "locations": [
+                    {
+                      "step": 0,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 77,
+                            "startColumn": 1
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 1,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 83,
+                            "startColumn": 11
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 2,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 85,
+                            "startColumn": 5
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 3,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 86,
+                            "startColumn": 5
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 4,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 86,
+                            "startColumn": 5
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 5,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 88,
+                            "startColumn": 32
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 6,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 88,
+                            "startColumn": 17
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 7,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 90,
+                            "startColumn": 9
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 8,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 96,
+                            "startColumn": 22
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 9,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 98,
+                            "startColumn": 26
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 10,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 100,
+                            "startColumn": 9
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 11,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 101,
+                            "startColumn": 26
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "26110",
+          "message": {
+            "text": "Caller failing to hold lock 'Spinlock->RwSpinlock' before calling function 'RwSpinlockRelease'."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "fileLocation": {
+                  "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                },
+                "region": {
+                  "startLine": 101,
+                  "startColumn": 9,
+                  "endLine": 101,
+                  "endColumn": 61
+                }
+              },
+              "fullyQualifiedLogicalName": "RecRwSpinlockRelease"
+            }
+          ],
+          "codeFlows": [
+            {
+              "threadFlows": [
+                {
+                  "locations": [
+                    {
+                      "step": 0,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 77,
+                            "startColumn": 1
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 1,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 83,
+                            "startColumn": 11
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 2,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 85,
+                            "startColumn": 5
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 3,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 86,
+                            "startColumn": 5
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 4,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 86,
+                            "startColumn": 5
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 5,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 88,
+                            "startColumn": 32
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 6,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 88,
+                            "startColumn": 17
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 7,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 90,
+                            "startColumn": 9
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 8,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 96,
+                            "startColumn": 22
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 9,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 98,
+                            "startColumn": 26
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 10,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 100,
+                            "startColumn": 9
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "step": 11,
+                      "location": {
+                        "physicalLocation": {
+                          "fileLocation": {
+                            "uri": "file:///C:/Users/Andrei/Desktop/Repos/MiniHV/src/CommonLib/src/rec_rw_spinlock.c"
+                          },
+                          "region": {
+                            "startLine": 101,
+                            "startColumn": 26
+                          }
+                        }
+                      },
+                      "importance": "important"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "tool": {
+        "name": "PREfast",
+        "fullName": "PREfast Code Analysis",
+        "version": "14.24.28316.0",
+        "fileVersion": "14.00.28316.00"
+      },
+      "invocations": [
+        {
+          "commandLine": "\"C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.24.28314\\bin\\HostX86\\x64\\c1.dll\" -ACf{1F7B090C-16DB-4822-966A-A93D26ED4681} -ACpmspft140.dll -Alint -D_PREFAST_ -D_AST_FE_ -Analyze -zm0x005D3170 -il C:\\Users\\Andrei\\AppData\\Local\\Temp\\_CL_aa3d6cc9ast -typedil -f src\\rec_rw_spinlock.c -Ze -D_MSC_EXTENSIONS -Zp16 -pc \\:/ -D_MSC_VER=1924 -D_MSC_FULL_VER=192428316 -D_MSC_BUILD=0 -D_M_AMD64=100 -ZILP448 -D_M_X64=100 -D_WIN64 -D_WIN32 -I C:\\Users\\Andrei\\Desktop\\Repos\\MiniHV\\src\\CommonLib\\headers -I C:\\Users\\Andrei\\Desktop\\Repos\\MiniHV\\src\\CommonLib\\inc -nologo -W 4 -WX -diagnostics:column -D_GUARDOVERFLOW_CRT_ALLOCATORS=1 -Ot -Oy -DCODE_ANALYSIS -DCOMMONLIB_LIB_IMPL -DDEBUG -D_DEBUG -D_CONSOLE -D_UNICODE -DUNICODE -GF -D__MSVC_RUNTIME_CHECKS -RTCs -RTCu -clrNoPureCRT -D_DEBUG -D_MT -GS -D_M_FP_PRECISE -FoC:\\Users\\Andrei\\Desktop\\Repos\\MiniHV\\src\\..\\temp\\x64\\Debug\\CommonLib\\rec_rw_spinlock.obj -FdC:\\Users\\Andrei\\Desktop\\Repos\\MiniHV\\src\\..\\temp\\x64\\Debug\\CommonLib\\CommonLib.pdb -Gd -analyze:projectdirectory C:\\Users\\Andrei\\Desktop\\Repos\\MiniHV\\src\\CommonLib\\ -analyze:rulesetdirectory ;C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\Team Tools\\Static Analysis Tools\\\\Rule Sets; -analyze:ruleset C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\Team Tools\\Static Analysis Tools\\Rule Sets\\AllRules.ruleset -analyze:quiet -analyze:plugin C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.24.28314\\bin\\HostX86\\x86\\EspXEngine.dll -FC -errorreport:prompt -I C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.24.28314\\include -I C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.24.28314\\atlmfc\\include -I C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Auxiliary\\VS\\include -I C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.18362.0\\ucrt -I C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Auxiliary\\VS\\UnitTest\\include -I C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.18362.0\\um -I C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.18362.0\\shared -I C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.18362.0\\winrt -I C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.18362.0\\cppwinrt -I C:\\Users\\Andrei\\Desktop\\Repos\\MiniHV\\src\\CommonLib\\Include\\um -MPdiagMutex 0000000000000204"
+        }
+      ],
+      "files": {
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/sal_intrinsic.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/src/bitmap.c": {
+          "roles": [
+            "analysisTarget",
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/src/hash_table.c": {
+          "roles": [
+            "analysisTarget",
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/base.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/common_lib.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/rw_spinlock.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/data_type.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/status.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/intutils.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/sal_interface.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/va_list.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/native/memory.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/monlock.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/cl_memory.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/src/event.c": {
+          "roles": [
+            "analysisTarget",
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/assert.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/native/string.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/cl_string.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/bitmap.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/hash_table.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/event.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/list.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/ref_cnt.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/src/rec_rw_spinlock.c": {
+          "roles": [
+            "analysisTarget",
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/rec_rw_spinlock.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/lock_common.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/spinlock.h": {
+          "roles": [
+            "resultFile"
+          ]
+        }
+      },
+      "logicalLocations": {},
+      "resources": {
+        "rules": {}
+      }
+    }
+  ]
+}

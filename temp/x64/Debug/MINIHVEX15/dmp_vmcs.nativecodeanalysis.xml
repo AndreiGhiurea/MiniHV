@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DEFECTS>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\andrei\desktop\repos\minihv\src\minihvex\headers\</FILEPATH>
+      <FILENAME>dmp_common.h</FILENAME>
+      <LINE>11</LINE>
+      <COLUMN>0</COLUMN>
+    </SFA>
+    <DEFECTCODE>28285</DEFECTCODE>
+    <DESCRIPTION>For function 'DumpTakeLock' 'return' syntax error in 'SAL_requires_lock_not_held((m_dumpLock))' near 'm_dumpLock))'.</DESCRIPTION>
+    <FUNCTION></FUNCTION>
+    <DECORATED></DECORATED>
+    <FUNCLINE>0</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\andrei\desktop\repos\minihv\src\minihvex\headers\</FILEPATH>
+      <FILENAME>dmp_common.h</FILENAME>
+      <LINE>11</LINE>
+      <COLUMN>0</COLUMN>
+    </SFA>
+    <DEFECTCODE>28285</DEFECTCODE>
+    <DESCRIPTION>For function 'DumpTakeLock' 'return' syntax error in 'SAL_releases_exclusive_lock((m_dumpLock))' near 'm_dumpLock))'.</DESCRIPTION>
+    <FUNCTION></FUNCTION>
+    <DECORATED></DECORATED>
+    <FUNCLINE>0</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\andrei\desktop\repos\minihv\src\minihvex\headers\</FILEPATH>
+      <FILENAME>dmp_common.h</FILENAME>
+      <LINE>18</LINE>
+      <COLUMN>0</COLUMN>
+    </SFA>
+    <DEFECTCODE>28285</DEFECTCODE>
+    <DESCRIPTION>For function 'DumpReleaseLock' 'return' syntax error in 'SAL_requires_exclusive_lock_held((m_dumpLock))' near 'm_dumpLock))'.</DESCRIPTION>
+    <FUNCTION></FUNCTION>
+    <DECORATED></DECORATED>
+    <FUNCLINE>0</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\andrei\desktop\repos\minihv\src\minihvex\headers\</FILEPATH>
+      <FILENAME>dmp_common.h</FILENAME>
+      <LINE>18</LINE>
+      <COLUMN>0</COLUMN>
+    </SFA>
+    <DEFECTCODE>28285</DEFECTCODE>
+    <DESCRIPTION>For function 'DumpReleaseLock' 'return' syntax error in 'SAL_releases_exclusive_lock((m_dumpLock))' near 'm_dumpLock))'.</DESCRIPTION>
+    <FUNCTION></FUNCTION>
+    <DECORATED></DECORATED>
+    <FUNCLINE>0</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+</DEFECTS>

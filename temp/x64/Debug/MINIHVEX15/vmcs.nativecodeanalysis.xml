@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DEFECTS>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+      <FILENAME>vmcs.c</FILENAME>
+      <LINE>582</LINE>
+      <COLUMN>10</COLUMN>
+    </SFA>
+    <DEFECTCODE>6326</DEFECTCODE>
+    <DESCRIPTION>Potential comparison of a constant with another constant.</DESCRIPTION>
+    <FUNCTION>VmcsInitializeVMXControls</FUNCTION>
+    <DECORATED>VmcsInitializeVMXControls</DECORATED>
+    <FUNCLINE>494</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+</DEFECTS>

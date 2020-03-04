@@ -1,0 +1,122 @@
+{
+  "version": "2.0.0",
+  "$schema": "http://json.schemastore.org/sarif-2.0.0",
+  "runs": [
+    {
+      "results": [],
+      "tool": {
+        "name": "PREfast",
+        "fullName": "PREfast Code Analysis",
+        "version": "14.24.28316.0",
+        "fileVersion": "14.00.28316.00"
+      },
+      "invocations": [
+        {
+          "commandLine": "\"C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.24.28314\\bin\\HostX86\\x64\\c1.dll\" -ACf{1F7B090C-16DB-4822-966A-A93D26ED4681} -ACpmspft140.dll -Alint -D_PREFAST_ -D_AST_FE_ -Analyze -zm0x005D3170 -il C:\\Users\\Andrei\\AppData\\Local\\Temp\\_CL_499a3f4dast -typedil -f src\\hal.c -Ze -D_MSC_EXTENSIONS -Zp16 -pc \\:/ -D_MSC_VER=1924 -D_MSC_FULL_VER=192428316 -D_MSC_BUILD=0 -D_M_AMD64=100 -ZILP448 -D_M_X64=100 -D_WIN64 -D_WIN32 -I C:\\Users\\Andrei\\Desktop\\Repos\\MiniHV\\src\\HAL\\headers -I C:\\Users\\Andrei\\Desktop\\Repos\\MiniHV\\src\\HAL\\inc -I C:\\Users\\Andrei\\Desktop\\Repos\\MiniHV\\src\\commonlib\\inc -nologo -W 4 -WX -diagnostics:column -D_GUARDOVERFLOW_CRT_ALLOCATORS=1 -Ot -Oy -DCODE_ANALYSIS -DDEBUG -D_DEBUG -D_UNICODE -DUNICODE -GF -D__MSVC_RUNTIME_CHECKS -RTCs -RTCu -clrNoPureCRT -D_DEBUG -D_MT -GS -D_M_FP_PRECISE -FoC:\\Users\\Andrei\\Desktop\\Repos\\MiniHV\\src\\..\\temp\\x64\\Debug\\HAL\\hal.obj -FdC:\\Users\\Andrei\\Desktop\\Repos\\MiniHV\\src\\..\\temp\\x64\\Debug\\HAL\\HAL.pdb -Gd -analyze:projectdirectory C:\\Users\\Andrei\\Desktop\\Repos\\MiniHV\\src\\HAL\\ -analyze:rulesetdirectory ;C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\Team Tools\\Static Analysis Tools\\\\Rule Sets; -analyze:ruleset C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\Team Tools\\Static Analysis Tools\\Rule Sets\\AllRules.ruleset -analyze:quiet -analyze:plugin C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.24.28314\\bin\\HostX86\\x86\\EspXEngine.dll -FC -errorreport:prompt -I C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.24.28314\\include -I C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.24.28314\\atlmfc\\include -I C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Auxiliary\\VS\\include -I C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.18362.0\\ucrt -I C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Auxiliary\\VS\\UnitTest\\include -I C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.18362.0\\um -I C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.18362.0\\shared -I C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.18362.0\\winrt -I C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.18362.0\\cppwinrt -I C:\\Users\\Andrei\\Desktop\\Repos\\MiniHV\\src\\HAL\\Include\\um -MPdiagMutex 00000000000001CC"
+        }
+      ],
+      "files": {
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/data_type.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/hal/src/hal.c": {
+          "roles": [
+            "analysisTarget",
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/hal/headers/hal_base.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/base.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/common_lib.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/status.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/intutils.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/sal_interface.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/sal_intrinsic.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/va_list.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/native/memory.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/cl_memory.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/assert.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/native/string.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/cl_string.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/hal/inc/hal.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/hal/inc/yasm_imports.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/hal/inc/gdt.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/hal/inc/idt.h": {
+          "roles": [
+            "resultFile"
+          ]
+        }
+      },
+      "logicalLocations": {},
+      "resources": {
+        "rules": {}
+      }
+    }
+  ]
+}

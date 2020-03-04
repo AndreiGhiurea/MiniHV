@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DEFECTS>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+      <FILENAME>idt_handlers.c</FILENAME>
+      <LINE>194</LINE>
+      <COLUMN>0</COLUMN>
+    </SFA>
+    <DEFECTCODE>6101</DEFECTCODE>
+    <DESCRIPTION>Returning uninitialized memory '*IdtEntries'.  A successful path through the function does not set the named _Out_ parameter. </DESCRIPTION>
+    <FUNCTION>CreateDummyDescriptors</FUNCTION>
+    <DECORATED>CreateDummyDescriptors</DECORATED>
+    <FUNCLINE>194</FUNCLINE>
+    <PROBABILITY>1</PROBABILITY>
+    <RANK>3</RANK>
+    <CATEGORY>
+      <RULECATEGORY>mspft</RULECATEGORY>
+    </CATEGORY>
+    <PATH>
+      <SFA>
+        <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+        <FILENAME>idt_handlers.c</FILENAME>
+        <LINE>194</LINE>
+        <COLUMN>0</COLUMN>
+        <KEYEVENT>
+          <ID>1</ID>
+          <KIND>declaration</KIND>
+          <IMPORTANCE>Essential</IMPORTANCE>
+          <MESSAGE>'*IdtEntries' is not initialized</MESSAGE>
+        </KEYEVENT>
+      </SFA>
+      <SFA>
+        <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+        <FILENAME>idt_handlers.c</FILENAME>
+        <LINE>199</LINE>
+        <COLUMN>10</COLUMN>
+      </SFA>
+      <SFA>
+        <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+        <FILENAME>idt_handlers.c</FILENAME>
+        <LINE>201</LINE>
+        <COLUMN>4</COLUMN>
+        <KEYEVENT>
+          <ID>2</ID>
+          <KIND>branch</KIND>
+          <IMPORTANCE>Full</IMPORTANCE>
+          <MESSAGE>Enter this branch, (assume '(((void *)0))!=IdtEntries')</MESSAGE>
+        </KEYEVENT>
+      </SFA>
+      <SFA>
+        <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+        <FILENAME>idt_handlers.c</FILENAME>
+        <LINE>202</LINE>
+        <COLUMN>4</COLUMN>
+        <KEYEVENT>
+          <ID>3</ID>
+          <KIND>branch</KIND>
+          <IMPORTANCE>Full</IMPORTANCE>
+          <MESSAGE>Enter this branch, (assume '_Param_(0)')</MESSAGE>
+        </KEYEVENT>
+      </SFA>
+      <SFA>
+        <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+        <FILENAME>idt_handlers.c</FILENAME>
+        <LINE>206</LINE>
+        <COLUMN>11</COLUMN>
+      </SFA>
+      <SFA>
+        <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+        <FILENAME>idt_handlers.c</FILENAME>
+        <LINE>206</LINE>
+        <COLUMN>18</COLUMN>
+        <KEYEVENT>
+          <ID>4</ID>
+          <KIND>branch</KIND>
+          <IMPORTANCE>Full</IMPORTANCE>
+          <MESSAGE>Skip this loop, (assume 'i&lt;NumberOfEntries' is false)</MESSAGE>
+        </KEYEVENT>
+      </SFA>
+      <SFA>
+        <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+        <FILENAME>idt_handlers.c</FILENAME>
+        <LINE>194</LINE>
+        <COLUMN>0</COLUMN>
+        <KEYEVENT>
+          <ID>5</ID>
+          <KIND>usage</KIND>
+          <IMPORTANCE>Essential</IMPORTANCE>
+          <MESSAGE>'*IdtEntries' is an _Out_ parameter that may not have been assigned to</MESSAGE>
+        </KEYEVENT>
+      </SFA>
+    </PATH>
+  </DEFECT>
+</DEFECTS>

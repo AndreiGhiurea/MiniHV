@@ -1,0 +1,548 @@
+{
+  "version": "2.0.0",
+  "$schema": "http://json.schemastore.org/sarif-2.0.0",
+  "runs": [
+    {
+      "results": [
+        {
+          "ruleId": "28285",
+          "message": {
+            "text": "For function 'DumpTakeLock' 'return' syntax error in 'SAL_requires_lock_not_held((m_dumpLock))' near 'm_dumpLock))'."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "fileLocation": {
+                  "uri": "file:///c:/users/andrei/desktop/repos/minihv/src/minihvex/headers/dmp_common.h"
+                },
+                "region": {
+                  "startLine": 11,
+                  "startColumn": 1
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "28285",
+          "message": {
+            "text": "For function 'DumpTakeLock' 'return' syntax error in 'SAL_releases_exclusive_lock((m_dumpLock))' near 'm_dumpLock))'."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "fileLocation": {
+                  "uri": "file:///c:/users/andrei/desktop/repos/minihv/src/minihvex/headers/dmp_common.h"
+                },
+                "region": {
+                  "startLine": 11,
+                  "startColumn": 1
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "28285",
+          "message": {
+            "text": "For function 'DumpReleaseLock' 'return' syntax error in 'SAL_requires_exclusive_lock_held((m_dumpLock))' near 'm_dumpLock))'."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "fileLocation": {
+                  "uri": "file:///c:/users/andrei/desktop/repos/minihv/src/minihvex/headers/dmp_common.h"
+                },
+                "region": {
+                  "startLine": 18,
+                  "startColumn": 1
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "28285",
+          "message": {
+            "text": "For function 'DumpReleaseLock' 'return' syntax error in 'SAL_releases_exclusive_lock((m_dumpLock))' near 'm_dumpLock))'."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "fileLocation": {
+                  "uri": "file:///c:/users/andrei/desktop/repos/minihv/src/minihvex/headers/dmp_common.h"
+                },
+                "region": {
+                  "startLine": 18,
+                  "startColumn": 1
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "tool": {
+        "name": "PREfast",
+        "fullName": "PREfast Code Analysis",
+        "version": "14.24.28316.0",
+        "fileVersion": "14.00.28316.00"
+      },
+      "invocations": [
+        {
+          "commandLine": "\"C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.24.28314\\bin\\HostX86\\x64\\c1.dll\" -ACf{1F7B090C-16DB-4822-966A-A93D26ED4681} -ACpmspft140.dll -Alint -D_PREFAST_ -D_AST_FE_ -Analyze -zm0x005D3170 -il C:\\Users\\Andrei\\AppData\\Local\\Temp\\_CL_0e3595feast -typedil -f minihvex\\dmp_vmcs.c -Ze -D_MSC_EXTENSIONS -Zp16 -pc \\:/ -D_MSC_VER=1924 -D_MSC_FULL_VER=192428316 -D_MSC_BUILD=0 -D_M_AMD64=100 -ZILP448 -D_M_X64=100 -D_WIN64 -D_WIN32 -I C:\\Users\\Andrei\\Desktop\\Repos\\MiniHV\\distorm\\inc -I C:\\Users\\Andrei\\Desktop\\Repos\\MiniHV\\acpi\\inc -I C:\\Users\\Andrei\\Desktop\\Repos\\MiniHV\\inc -I C:\\Users\\Andrei\\Desktop\\Repos\\MiniHV\\src\\minihvex\\headers -I C:\\Users\\Andrei\\Desktop\\Repos\\MiniHV\\src\\commonlib\\inc -I C:\\Users\\Andrei\\Desktop\\Repos\\MiniHV\\src\\hal\\inc -nologo -W 4 -WX -diagnostics:column -Ot -DCODE_ANALYSIS -DX64 -DAMD64 -DDEBUG -D_DEBUG -DWIN64 -GF -clrNoPureCRT -D_DEBUG -D_MT -D_M_FP_PRECISE -FoC:\\Users\\Andrei\\Desktop\\Repos\\MiniHV\\src\\..\\temp\\x64\\Debug\\MINIHVEX15\\dmp_vmcs.obj -FdC:\\Users\\Andrei\\Desktop\\Repos\\MiniHV\\src\\..\\temp\\x64\\Debug\\MINIHVEX15\\vc142.pdb -Gd -wd 4313 -wd 4474 -wd 4476 -wd 4477 -analyze:projectdirectory C:\\Users\\Andrei\\Desktop\\Repos\\MiniHV\\src\\ -analyze:rulesetdirectory ;C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\Team Tools\\Static Analysis Tools\\\\Rule Sets; -analyze:ruleset C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\Team Tools\\Static Analysis Tools\\Rule Sets\\AllRules.ruleset -analyze:quiet -analyze:plugin C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.24.28314\\bin\\HostX86\\x86\\EspXEngine.dll -FC -errorreport:prompt -I C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.24.28314\\include -I C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.24.28314\\atlmfc\\include -I C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Auxiliary\\VS\\include -I C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.18362.0\\ucrt -I C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Auxiliary\\VS\\UnitTest\\include -I C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.18362.0\\um -I C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.18362.0\\shared -I C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.18362.0\\winrt -I C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.18362.0\\cppwinrt -I C:\\Users\\Andrei\\Desktop\\Repos\\MiniHV\\src\\Include\\um -MPdiagMutex 00000000000001BC"
+        }
+      ],
+      "files": {
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/base.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/acpi/inc/actypes.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/rw_spinlock.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/minihvex/check_input.c": {
+          "roles": [
+            "analysisTarget",
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/common_lib.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/minihvex/headers/check_input.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/minihvex/headers/task.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/data_type.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/minihvex/headers/minihv.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/minihvex/headers/processor.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/sal_interface.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/sal_intrinsic.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/intutils.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/status.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/acpi/inc/acnames.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/minihvex/headers/dmp_cpu.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/va_list.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/monlock.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/native/memory.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/cl_memory.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/assert.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/hal/inc/msr.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/native/string.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/minihvex/headers/int15_memory.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/hal/inc/cpuid_leaf.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/cl_string.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/hal/inc/register.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/list.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/minihvex/headers/segment.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/minihvex/headers/hv_assert.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/acpi/inc/acpiosxf.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/minihvex/headers/multiboot.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/minihvex/headers/cpumu.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/minihvex/headers/vmx_operations.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/minihvex/headers/vmx_capability.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/minihvex/headers/ept.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/lock_common.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/minihvex/headers/lock.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/acpi/inc/acrestyp.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/spinlock.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/acpi/inc/platform/acenvex.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/rec_rw_spinlock.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/bitmap.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/hal/inc/cpu.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/minihvex/headers/apic.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/minihvex/headers/acpi_interface.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/hal/inc/vmx_exit.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/acpi/inc/acpi.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/acpi/inc/platform/acenv.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/acpi/inc/acconfig.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/acpi/inc/platform/acwin64.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/acpi/inc/actbl.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/hal/inc/vmx.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/acpi/inc/platform/acintel.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/acpi/inc/acexcep.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/acpi/inc/actbl1.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/acpi/inc/acbuffer.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/hal/inc/pte.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/acpi/inc/actbl2.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/acpi/inc/actbl3.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/hal/inc/cpu_utils.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/acpi/inc/acoutput.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/minihvex/headers/vmcs.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/acpi/inc/acpixf.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/commonlib/inc/event.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/hal/inc/hw_fpu.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/hal/inc/cpu_if.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/inc/vmexit_reason.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/minihvex/headers/idt.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/hal/inc/vmcs_fields.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/hal/inc/vmx_exit_reasons.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/minihvex/headers/data.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/minihvex/headers/log.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/minihvex/headers/serial.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/minihvex/headers/vmmemory.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/minihvex/headers/mtrr.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/minihvex/headers/paging_tables.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/minihvex/hv_assert.c": {
+          "roles": [
+            "analysisTarget",
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/minihvex/headers/display.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/minihvex/dmp_cpu.c": {
+          "roles": [
+            "analysisTarget",
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/minihvex/headers/vmguest.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/minihvex/headers/idt_handlers.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/minihvex/dmp_mtrr.c": {
+          "roles": [
+            "analysisTarget",
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/minihvex/headers/dmp_mtrr.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/minihvex/dmp_vmcs.c": {
+          "roles": [
+            "analysisTarget",
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/minihvex/headers/dmp_vmcs.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/minihvex/headers/dmp_memory.h": {
+          "roles": [
+            "resultFile"
+          ]
+        },
+        "file:///c:/users/andrei/desktop/repos/minihv/src/minihvex/headers/dmp_common.h": {
+          "roles": [
+            "resultFile"
+          ]
+        }
+      },
+      "logicalLocations": {},
+      "resources": {
+        "rules": {}
+      }
+    }
+  ]
+}
