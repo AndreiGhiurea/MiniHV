@@ -4,14 +4,27 @@
 
 STATUS
 DumpMtrrData(
-    IN      MTRR_DATA*     MtrrData
-    )
+    _In_      MTRR_DATA*     MtrrData
+)
 {
     if (MtrrData == NULL) return STATUS_INVALID_PARAMETER1;
 
-    LOG( "MTRR List dump: \n");
+    PLIST_ENTRY pList = NULL;
+    PMTRR_ENTRY pEntry = NULL;
 
-    // TODO: perform implementation here
+    LOG("MTRR List dump: \n");
+
+    for (DWORD i = 0; i < MtrrData->NumberOfListEntries; i++)
+    {
+        pList = &(MtrrData->MtrrRegions[i]);
+        while (pList)
+        {
+            pEntry = CONTAINING_RECORD(pList, MTRR_ENTRY, ListEntry);
+            pList = pList->Flink;
+
+            LOGPL("Base: 0x%016x; End: 0x%016x; Type: 0x%x\n", pEntry->BaseAddress, pEntry->EndAddress, pEntry->MemoryType);
+        }
+    }
 
     return STATUS_SUCCESS;
 }

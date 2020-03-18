@@ -6,7 +6,7 @@
 
 STATUS
 DumpMtrrData(
-    IN      MTRR_DATA*     MtrrData       
+    _In_      MTRR_DATA*     MtrrData
     );
 
 #endif // _DMP_MTRR_H_
