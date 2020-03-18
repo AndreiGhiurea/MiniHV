@@ -2,7 +2,7 @@
 <DEFECTS>
   <DEFECT>
     <SFA>
-      <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+      <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
       <FILENAME>display.c</FILENAME>
       <LINE>38</LINE>
       <COLUMN>47</COLUMN>
@@ -16,7 +16,7 @@
   </DEFECT>
   <DEFECT>
     <SFA>
-      <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+      <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
       <FILENAME>display.c</FILENAME>
       <LINE>85</LINE>
       <COLUMN>117</COLUMN>
@@ -30,7 +30,7 @@
   </DEFECT>
   <DEFECT>
     <SFA>
-      <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+      <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
       <FILENAME>display.c</FILENAME>
       <LINE>85</LINE>
       <COLUMN>100</COLUMN>
@@ -44,7 +44,7 @@
   </DEFECT>
   <DEFECT>
     <SFA>
-      <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+      <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
       <FILENAME>display.c</FILENAME>
       <LINE>119</LINE>
       <COLUMN>148</COLUMN>
@@ -58,7 +58,7 @@
   </DEFECT>
   <DEFECT>
     <SFA>
-      <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+      <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
       <FILENAME>display.c</FILENAME>
       <LINE>123</LINE>
       <COLUMN>4</COLUMN>

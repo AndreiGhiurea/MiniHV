@@ -2,7 +2,7 @@
 <DEFECTS>
   <DEFECT>
     <SFA>
-      <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+      <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
       <FILENAME>hv_heap.c</FILENAME>
       <LINE>28</LINE>
       <COLUMN>23</COLUMN>
@@ -14,55 +14,37 @@
     <FUNCLINE>15</FUNCLINE>
     <PATH>
       <SFA>
-        <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+        <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
         <FILENAME>hv_heap.c</FILENAME>
         <LINE>15</LINE>
         <COLUMN>0</COLUMN>
       </SFA>
       <SFA>
-        <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+        <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
         <FILENAME>hv_heap.c</FILENAME>
         <LINE>20</LINE>
         <COLUMN>11</COLUMN>
       </SFA>
       <SFA>
-        <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+        <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
         <FILENAME>hv_heap.c</FILENAME>
         <LINE>22</LINE>
         <COLUMN>4</COLUMN>
       </SFA>
       <SFA>
-        <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+        <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
         <FILENAME>hv_heap.c</FILENAME>
         <LINE>24</LINE>
         <COLUMN>11</COLUMN>
       </SFA>
       <SFA>
-        <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+        <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
         <FILENAME>hv_heap.c</FILENAME>
         <LINE>26</LINE>
         <COLUMN>4</COLUMN>
       </SFA>
       <SFA>
-        <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
-        <FILENAME>hv_heap.c</FILENAME>
-        <LINE>26</LINE>
-        <COLUMN>4</COLUMN>
-      </SFA>
-      <SFA>
-        <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
-        <FILENAME>hv_heap.c</FILENAME>
-        <LINE>26</LINE>
-        <COLUMN>4</COLUMN>
-      </SFA>
-      <SFA>
-        <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
-        <FILENAME>hv_heap.c</FILENAME>
-        <LINE>26</LINE>
-        <COLUMN>4</COLUMN>
-      </SFA>
-      <SFA>
-        <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+        <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
         <FILENAME>hv_heap.c</FILENAME>
         <LINE>28</LINE>
         <COLUMN>23</COLUMN>
@@ -71,10 +53,10 @@
   </DEFECT>
   <DEFECT>
     <SFA>
-      <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+      <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
       <FILENAME>hv_heap.c</FILENAME>
-      <LINE>55</LINE>
-      <COLUMN>39</COLUMN>
+      <LINE>54</LINE>
+      <COLUMN>15</COLUMN>
     </SFA>
     <DEFECTCODE>26130</DEFECTCODE>
     <DESCRIPTION>Missing annotation _Requires_lock_held_(m_hvHeap.HeapLock) or _No_competing_thread_ at function 'HvAllocPoolWithTag'. Otherwise it could be a race condition. Variable 'm_hvHeap.Heap' should be protected by lock 'm_hvHeap.HeapLock'.</DESCRIPTION>
@@ -83,37 +65,31 @@
     <FUNCLINE>45</FUNCLINE>
     <PATH>
       <SFA>
-        <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+        <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
         <FILENAME>hv_heap.c</FILENAME>
         <LINE>45</LINE>
         <COLUMN>0</COLUMN>
       </SFA>
       <SFA>
-        <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+        <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
         <FILENAME>hv_heap.c</FILENAME>
         <LINE>52</LINE>
         <COLUMN>10</COLUMN>
       </SFA>
       <SFA>
-        <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+        <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
         <FILENAME>hv_heap.c</FILENAME>
         <LINE>54</LINE>
         <COLUMN>15</COLUMN>
-      </SFA>
-      <SFA>
-        <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
-        <FILENAME>hv_heap.c</FILENAME>
-        <LINE>55</LINE>
-        <COLUMN>39</COLUMN>
       </SFA>
     </PATH>
   </DEFECT>
   <DEFECT>
     <SFA>
-      <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+      <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
       <FILENAME>hv_heap.c</FILENAME>
-      <LINE>75</LINE>
-      <COLUMN>25</COLUMN>
+      <LINE>74</LINE>
+      <COLUMN>15</COLUMN>
     </SFA>
     <DEFECTCODE>26130</DEFECTCODE>
     <DESCRIPTION>Missing annotation _Requires_lock_held_(m_hvHeap.HeapLock) or _No_competing_thread_ at function 'HvFreePoolWithTag'. Otherwise it could be a race condition. Variable 'm_hvHeap.Heap' should be protected by lock 'm_hvHeap.HeapLock'.</DESCRIPTION>
@@ -122,22 +98,16 @@
     <FUNCLINE>68</FUNCLINE>
     <PATH>
       <SFA>
-        <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+        <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
         <FILENAME>hv_heap.c</FILENAME>
         <LINE>68</LINE>
         <COLUMN>0</COLUMN>
       </SFA>
       <SFA>
-        <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+        <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
         <FILENAME>hv_heap.c</FILENAME>
         <LINE>74</LINE>
         <COLUMN>15</COLUMN>
-      </SFA>
-      <SFA>
-        <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
-        <FILENAME>hv_heap.c</FILENAME>
-        <LINE>75</LINE>
-        <COLUMN>25</COLUMN>
       </SFA>
     </PATH>
   </DEFECT>

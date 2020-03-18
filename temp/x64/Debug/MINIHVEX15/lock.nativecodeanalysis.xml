@@ -2,88 +2,100 @@
 <DEFECTS>
   <DEFECT>
     <SFA>
-      <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+      <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
       <FILENAME>lock.c</FILENAME>
-      <LINE>13</LINE>
-      <COLUMN>15</COLUMN>
+      <LINE>7</LINE>
+      <COLUMN>0</COLUMN>
     </SFA>
     <DEFECTCODE>26165</DEFECTCODE>
-    <DESCRIPTION>Possibly failing to release lock '*Lock' in function 'AcquireLock'.</DESCRIPTION>
+    <DESCRIPTION>Possibly failing to release lock '* Lock' in function 'AcquireLock'.</DESCRIPTION>
     <FUNCTION>AcquireLock</FUNCTION>
     <DECORATED>AcquireLock</DECORATED>
     <FUNCLINE>7</FUNCLINE>
     <PATH>
       <SFA>
-        <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+        <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
         <FILENAME>lock.c</FILENAME>
         <LINE>7</LINE>
         <COLUMN>0</COLUMN>
       </SFA>
       <SFA>
-        <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+        <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
         <FILENAME>lock.c</FILENAME>
         <LINE>11</LINE>
         <COLUMN>15</COLUMN>
       </SFA>
       <SFA>
-        <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+        <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
         <FILENAME>lock.c</FILENAME>
         <LINE>13</LINE>
         <COLUMN>15</COLUMN>
       </SFA>
-    </PATH>
-  </DEFECT>
-  <DEFECT>
-    <SFA>
-      <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
-      <FILENAME>lock.c</FILENAME>
-      <LINE>21</LINE>
-      <COLUMN>15</COLUMN>
-    </SFA>
-    <DEFECTCODE>26167</DEFECTCODE>
-    <DESCRIPTION>Possibly releasing unheld lock '*Lock' in function 'ReleaseLock'.</DESCRIPTION>
-    <FUNCTION>ReleaseLock</FUNCTION>
-    <DECORATED>ReleaseLock</DECORATED>
-    <FUNCLINE>17</FUNCLINE>
-    <PATH>
       <SFA>
-        <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+        <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
         <FILENAME>lock.c</FILENAME>
-        <LINE>17</LINE>
+        <LINE>7</LINE>
         <COLUMN>0</COLUMN>
       </SFA>
-      <SFA>
-        <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
-        <FILENAME>lock.c</FILENAME>
-        <LINE>21</LINE>
-        <COLUMN>15</COLUMN>
-      </SFA>
     </PATH>
   </DEFECT>
   <DEFECT>
     <SFA>
-      <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+      <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
       <FILENAME>lock.c</FILENAME>
       <LINE>21</LINE>
       <COLUMN>15</COLUMN>
     </SFA>
     <DEFECTCODE>26110</DEFECTCODE>
-    <DESCRIPTION>Caller failing to hold lock '*Lock' before calling function 'icall'.</DESCRIPTION>
+    <DESCRIPTION>Caller failing to hold lock '* Lock' before calling function 'icall'.</DESCRIPTION>
     <FUNCTION>ReleaseLock</FUNCTION>
     <DECORATED>ReleaseLock</DECORATED>
     <FUNCLINE>17</FUNCLINE>
     <PATH>
       <SFA>
-        <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+        <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
         <FILENAME>lock.c</FILENAME>
         <LINE>17</LINE>
         <COLUMN>0</COLUMN>
       </SFA>
       <SFA>
-        <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+        <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
         <FILENAME>lock.c</FILENAME>
         <LINE>21</LINE>
         <COLUMN>15</COLUMN>
+      </SFA>
+    </PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
+      <FILENAME>lock.c</FILENAME>
+      <LINE>17</LINE>
+      <COLUMN>0</COLUMN>
+    </SFA>
+    <DEFECTCODE>26167</DEFECTCODE>
+    <DESCRIPTION>Possibly releasing unheld lock '* Lock' in function 'ReleaseLock'.</DESCRIPTION>
+    <FUNCTION>ReleaseLock</FUNCTION>
+    <DECORATED>ReleaseLock</DECORATED>
+    <FUNCLINE>17</FUNCLINE>
+    <PATH>
+      <SFA>
+        <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
+        <FILENAME>lock.c</FILENAME>
+        <LINE>17</LINE>
+        <COLUMN>0</COLUMN>
+      </SFA>
+      <SFA>
+        <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
+        <FILENAME>lock.c</FILENAME>
+        <LINE>21</LINE>
+        <COLUMN>15</COLUMN>
+      </SFA>
+      <SFA>
+        <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
+        <FILENAME>lock.c</FILENAME>
+        <LINE>17</LINE>
+        <COLUMN>0</COLUMN>
       </SFA>
     </PATH>
   </DEFECT>

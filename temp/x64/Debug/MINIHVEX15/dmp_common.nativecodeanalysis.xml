@@ -2,10 +2,10 @@
 <DEFECTS>
   <DEFECT>
     <SFA>
-      <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+      <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
       <FILENAME>dmp_common.c</FILENAME>
-      <LINE>26</LINE>
-      <COLUMN>4</COLUMN>
+      <LINE>18</LINE>
+      <COLUMN>0</COLUMN>
     </SFA>
     <DEFECTCODE>26165</DEFECTCODE>
     <DESCRIPTION>Possibly failing to release lock 'm_dumpLock' in function 'DumpTakeLock'.</DESCRIPTION>
@@ -14,28 +14,34 @@
     <FUNCLINE>18</FUNCLINE>
     <PATH>
       <SFA>
-        <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+        <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
         <FILENAME>dmp_common.c</FILENAME>
         <LINE>18</LINE>
         <COLUMN>0</COLUMN>
       </SFA>
       <SFA>
-        <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+        <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
         <FILENAME>dmp_common.c</FILENAME>
         <LINE>22</LINE>
         <COLUMN>15</COLUMN>
       </SFA>
       <SFA>
-        <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+        <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
         <FILENAME>dmp_common.c</FILENAME>
         <LINE>24</LINE>
         <COLUMN>4</COLUMN>
       </SFA>
       <SFA>
-        <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+        <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
         <FILENAME>dmp_common.c</FILENAME>
         <LINE>26</LINE>
         <COLUMN>4</COLUMN>
+      </SFA>
+      <SFA>
+        <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
+        <FILENAME>dmp_common.c</FILENAME>
+        <LINE>18</LINE>
+        <COLUMN>0</COLUMN>
       </SFA>
     </PATH>
   </DEFECT>

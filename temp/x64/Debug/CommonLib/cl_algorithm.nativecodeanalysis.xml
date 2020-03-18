@@ -2,7 +2,7 @@
 <DEFECTS>
   <DEFECT>
     <SFA>
-      <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\CommonLib\src\</FILEPATH>
+      <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\commonlib\src</FILEPATH>
       <FILENAME>cl_algorithm.c</FILENAME>
       <LINE>32</LINE>
       <COLUMN>12</COLUMN>
@@ -16,7 +16,7 @@
   </DEFECT>
   <DEFECT>
     <SFA>
-      <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\CommonLib\src\</FILEPATH>
+      <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\commonlib\src</FILEPATH>
       <FILENAME>cl_algorithm.c</FILENAME>
       <LINE>38</LINE>
       <COLUMN>20</COLUMN>
@@ -30,7 +30,7 @@
   </DEFECT>
   <DEFECT>
     <SFA>
-      <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\CommonLib\src\</FILEPATH>
+      <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\commonlib\src</FILEPATH>
       <FILENAME>cl_algorithm.c</FILENAME>
       <LINE>63</LINE>
       <COLUMN>28</COLUMN>
@@ -44,7 +44,7 @@
   </DEFECT>
   <DEFECT>
     <SFA>
-      <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\CommonLib\src\</FILEPATH>
+      <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\commonlib\src</FILEPATH>
       <FILENAME>cl_algorithm.c</FILENAME>
       <LINE>63</LINE>
       <COLUMN>103</COLUMN>

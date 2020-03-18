@@ -16,4 +16,4 @@
   serial.c
   tss.c
   vmx.c
-  HAL.vcxproj -> C:\Users\Andrei\Desktop\Repos\MiniHV\src\..\bin\x64\Debug\HAL\HAL.lib
+  HAL.vcxproj -> C:\Users\TDXX58C\Desktop\MiniHV\src\..\bin\x64\Debug\HAL\HAL.lib

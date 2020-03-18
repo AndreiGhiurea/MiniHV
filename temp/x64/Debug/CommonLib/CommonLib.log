@@ -24,13 +24,10 @@
   stack_interface.c
   strutils.c
   time.c
-  CommonLib.vcxproj -> C:\Users\Andrei\Desktop\Repos\MiniHV\src\..\bin\x64\Debug\CommonLib\CommonLib.lib
-C:\Users\Andrei\Desktop\Repos\MiniHV\src\CommonLib\src\cl_algorithm.c(32): warning C26451: Arithmetic overflow: Using operator '*' on a 4 byte value and then casting the result to a 8 byte value. Cast the value to the wider type before calling operator '*' to avoid overflow (io.2).
-C:\Users\Andrei\Desktop\Repos\MiniHV\src\CommonLib\src\cl_algorithm.c(38): warning C26451: Arithmetic overflow: Using operator '*' on a 4 byte value and then casting the result to a 8 byte value. Cast the value to the wider type before calling operator '*' to avoid overflow (io.2).
-C:\Users\Andrei\Desktop\Repos\MiniHV\src\CommonLib\src\cl_algorithm.c(63): warning C26451: Arithmetic overflow: Using operator '*' on a 4 byte value and then casting the result to a 8 byte value. Cast the value to the wider type before calling operator '*' to avoid overflow (io.2).
-C:\Users\Andrei\Desktop\Repos\MiniHV\src\CommonLib\src\cl_algorithm.c(63): warning C26451: Arithmetic overflow: Using operator '*' on a 4 byte value and then casting the result to a 8 byte value. Cast the value to the wider type before calling operator '*' to avoid overflow (io.2).
-C:\Users\Andrei\Desktop\Repos\MiniHV\src\CommonLib\src\rec_rw_spinlock.c(67): warning C26166: Possibly failing to acquire or to hold lock '*Spinlock' in function 'RecRwSpinlockAcquire'.
-C:\Users\Andrei\Desktop\Repos\MiniHV\src\CommonLib\src\rec_rw_spinlock.c(67): warning C26165: Possibly failing to release lock 'Spinlock->RwSpinlock' in function 'RecRwSpinlockAcquire'.
-C:\Users\Andrei\Desktop\Repos\MiniHV\src\CommonLib\src\rec_rw_spinlock.c(101): warning C26167: Possibly releasing unheld lock 'Spinlock->RwSpinlock' in function 'RecRwSpinlockRelease'.
-C:\Users\Andrei\Desktop\Repos\MiniHV\src\CommonLib\src\rec_rw_spinlock.c(101): warning C26165: Possibly failing to release lock '*Spinlock' in function 'RecRwSpinlockRelease'.
-C:\Users\Andrei\Desktop\Repos\MiniHV\src\CommonLib\src\rec_rw_spinlock.c(101): warning C26110: Caller failing to hold lock 'Spinlock->RwSpinlock' before calling function 'RwSpinlockRelease'.
+  CommonLib.vcxproj -> C:\Users\TDXX58C\Desktop\MiniHV\src\..\bin\x64\Debug\CommonLib\CommonLib.lib
+c:\users\tdxx58c\desktop\minihv\src\commonlib\src\cl_algorithm.c(32): warning C26451: Arithmetic overflow: Using operator '*' on a 4 byte value and then casting the result to a 8 byte value. Cast the value to the wider type before calling operator '*' to avoid overflow (io.2).
+c:\users\tdxx58c\desktop\minihv\src\commonlib\src\cl_algorithm.c(38): warning C26451: Arithmetic overflow: Using operator '*' on a 4 byte value and then casting the result to a 8 byte value. Cast the value to the wider type before calling operator '*' to avoid overflow (io.2).
+c:\users\tdxx58c\desktop\minihv\src\commonlib\src\cl_algorithm.c(63): warning C26451: Arithmetic overflow: Using operator '*' on a 4 byte value and then casting the result to a 8 byte value. Cast the value to the wider type before calling operator '*' to avoid overflow (io.2).
+c:\users\tdxx58c\desktop\minihv\src\commonlib\src\cl_algorithm.c(63): warning C26451: Arithmetic overflow: Using operator '*' on a 4 byte value and then casting the result to a 8 byte value. Cast the value to the wider type before calling operator '*' to avoid overflow (io.2).
+c:\users\tdxx58c\desktop\minihv\src\commonlib\src\rec_rw_spinlock.c(32): warning C26165: Possibly failing to release lock '* Spinlock' in function 'RecRwSpinlockAcquire'.
+c:\users\tdxx58c\desktop\minihv\src\commonlib\src\rec_rw_spinlock.c(77): warning C26165: Possibly failing to release lock '* Spinlock' in function 'RecRwSpinlockRelease'.

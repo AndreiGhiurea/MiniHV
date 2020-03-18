@@ -2,7 +2,7 @@
 <DEFECTS>
   <DEFECT>
     <SFA>
-      <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+      <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
       <FILENAME>idt_handlers.c</FILENAME>
       <LINE>194</LINE>
       <COLUMN>0</COLUMN>
@@ -19,7 +19,7 @@
     </CATEGORY>
     <PATH>
       <SFA>
-        <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+        <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
         <FILENAME>idt_handlers.c</FILENAME>
         <LINE>194</LINE>
         <COLUMN>0</COLUMN>
@@ -31,13 +31,13 @@
         </KEYEVENT>
       </SFA>
       <SFA>
-        <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+        <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
         <FILENAME>idt_handlers.c</FILENAME>
         <LINE>199</LINE>
         <COLUMN>10</COLUMN>
       </SFA>
       <SFA>
-        <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+        <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
         <FILENAME>idt_handlers.c</FILENAME>
         <LINE>201</LINE>
         <COLUMN>4</COLUMN>
@@ -49,7 +49,7 @@
         </KEYEVENT>
       </SFA>
       <SFA>
-        <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+        <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
         <FILENAME>idt_handlers.c</FILENAME>
         <LINE>202</LINE>
         <COLUMN>4</COLUMN>
@@ -61,13 +61,13 @@
         </KEYEVENT>
       </SFA>
       <SFA>
-        <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+        <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
         <FILENAME>idt_handlers.c</FILENAME>
         <LINE>206</LINE>
         <COLUMN>11</COLUMN>
       </SFA>
       <SFA>
-        <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+        <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
         <FILENAME>idt_handlers.c</FILENAME>
         <LINE>206</LINE>
         <COLUMN>18</COLUMN>
@@ -79,7 +79,7 @@
         </KEYEVENT>
       </SFA>
       <SFA>
-        <FILEPATH>C:\Users\Andrei\Desktop\Repos\MiniHV\src\minihvex\</FILEPATH>
+        <FILEPATH>c:\users\tdxx58c\desktop\minihv\src\minihvex</FILEPATH>
         <FILENAME>idt_handlers.c</FILENAME>
         <LINE>194</LINE>
         <COLUMN>0</COLUMN>

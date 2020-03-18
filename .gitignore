@@ -17,7 +17,6 @@
 *.pch
 
 # Libraries
-*.lib
 *.a
 *.la
 *.lo
@@ -29,7 +28,6 @@
 *.dylib
 
 # Executables
-*.exe
 *.out
 *.app
 *.i*86
@@ -56,3 +54,7 @@ VM
 *.db-shm
 *.db-wal
 temp/x64/Debug/MINIHVEX15/log
+bin/x64/Debug/CommonLib/CommonLib.lib
+bin/x64/Debug/HAL/HAL.lib
+*.opendb
+*.xml
