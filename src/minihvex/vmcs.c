@@ -667,6 +667,7 @@ VmcsInitializeVMXControls(
     if( IsBooleanFlagOn( secondaryProcBasedControls, PROC_BASED_SECONDARY_ENABLE_EPT ) )
     {
         /// EPT page table pointer
+        VmxWrite(VMCS_CONTROL_EPT_POINTER_FULL, *((QWORD*)(&gGlobalData.VmxCurrentSettings.Ept)));
     }
     else
     {

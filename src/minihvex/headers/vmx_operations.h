@@ -23,6 +23,8 @@ typedef struct _VMX_SETTINGS
 
     volatile DWORD              CpusReceivedSIPI;
 
+    EPTP                        Ept;
+
     BITMAP                      MsrBitmap;
 
     DWORD                       GuestPreloaderAddress;

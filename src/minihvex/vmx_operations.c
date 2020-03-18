@@ -88,6 +88,13 @@ VmxConfigureGlobalStructures(
         return status;
     }
 
+    status = ConfigureEPTP(&VmxSettings->Ept);
+    if (!SUCCEEDED(status))
+    {
+        LOGL("ConfigureEPTP failed with status: 0x%x\n", status);
+        return status;
+    }
+
     status = VmxAllocateAndInitBitmaps(&VmxSettings->MsrBitmap);
     if (!SUCCEEDED(status))
     {

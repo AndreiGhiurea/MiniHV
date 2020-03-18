@@ -171,6 +171,7 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ept.c" />
     <ClCompile Include="minihvex\acpi_interface.c" />
     <ClCompile Include="minihvex\acpi_osl.c" />
     <ClCompile Include="minihvex\apic.c" />

@@ -189,6 +189,9 @@
     <ClCompile Include="minihvex\check_input.c">
       <Filter>Source Files\core</Filter>
     </ClCompile>
+    <ClCompile Include="ept.c">
+      <Filter>Source Files\virtualization</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="minihvex\headers\acpi_interface.h">

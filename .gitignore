@@ -59,3 +59,6 @@ bin/x64/Debug/HAL/HAL.lib
 *.opendb
 *.xml
 *.ipch
+bin/x64/Debug/MINIHVEX15/MINIHVEX.bin
+PXE/MINIHVEX.bin
+PXE/HAL9000.bin

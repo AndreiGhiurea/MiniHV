@@ -372,8 +372,7 @@ GuestMapMemoryRange(
             memoryType = MEMORY_TYPE_STRONG_UNCACHEABLE;
         }
 
-        /// TODO: map through EPT
-        eptMappingResult = (void*)1; /* EptMapGuestPA((PVOID)addressToMap, PAGE_SIZE, memoryType, NULL, MAX_BYTE, FALSE, FALSE);*/
+        eptMappingResult = EptMapGuestPA((PVOID)addressToMap, PAGE_SIZE, memoryType, NULL, MAX_BYTE, FALSE, FALSE);
 
         // we can receive NULL in case addressToMap is NULL
         if( ( NULL == eptMappingResult ) && ( NULL != addressToMap ) )
