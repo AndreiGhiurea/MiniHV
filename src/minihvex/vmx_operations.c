@@ -16,6 +16,49 @@
 // warning C28039: The type of actual parameter '24576|2048|((0<<1))|0' should exactly match the type 'VMCS_FIELD':
 #pragma warning(disable: 28039)
 
+#define BITMAP_ENTRIES_IN_A_PAGE                (PAGE_SIZE * BITS_PER_BYTE)
+
+STATUS
+VmxAllocateAndInitBitmaps(
+    OUT BITMAP* Bitmap
+)
+{
+    PVOID pMsrBitmap;
+    STATUS status;
+
+    pMsrBitmap = NULL;
+    status = STATUS_HEAP_INSUFFICIENT_RESOURCES;
+
+    if (NULL != Bitmap)
+    {
+        ASSERT(PAGE_SIZE == BitmapPreinit(Bitmap, BITMAP_ENTRIES_IN_A_PAGE));
+
+        pMsrBitmap = HvAllocPoolWithTag(PoolAllocateZeroMemory, PAGE_SIZE, HEAP_VMX_TAG, PAGE_SIZE);
+        if (NULL == pMsrBitmap)
+        {
+            LOGL("HvAllocPoolWithTag failed\n");
+            goto cleanup;
+        }
+
+        BitmapInit(Bitmap, pMsrBitmap);
+    }
+
+    status = STATUS_SUCCESS;
+
+cleanup:
+    if (!SUCCEEDED(status))
+    {
+        if (pMsrBitmap != NULL)
+        {
+            HvFreePoolWithTag(pMsrBitmap, HEAP_VMX_TAG);
+            pMsrBitmap = NULL;
+        }
+    }
+
+    return status;
+}
+
+
 //******************************************************************************
 // Function:      VmxRetrieveCapabilities
 // Description: Retrieves processor capabilities.
@@ -42,6 +85,13 @@ VmxConfigureGlobalStructures(
     if (!SUCCEEDED(status))
     {
         LOGL("VmxRetrieveCapabilities failed with status: 0x%x\n", status);
+        return status;
+    }
+
+    status = VmxAllocateAndInitBitmaps(&VmxSettings->MsrBitmap);
+    if (!SUCCEEDED(status))
+    {
+        LOGL("VmxAllocateAndInitBitmaps failed with status: 0x%x\n", status);
         return status;
     }
 

@@ -148,8 +148,8 @@
 // 24.6.2 Processor-Based VM-Execution Controls
 // NOTE: These controls will be OR'ed with the necessary
 // default1 bits
-#define VM_CONTROL_PRIMARY_PROC_BASED_CTLS          (   PROC_BASED_PRIMARY_ACTIVATE_SECONDARY_CTLS \
-                                                        )
+#define VM_CONTROL_PRIMARY_PROC_BASED_CTLS          (   PROC_BASED_PRIMARY_ACTIVATE_SECONDARY_CTLS | \
+                                                        PROC_BASED_PRIMARY_USE_MSR_BITMAPS )
 
 // NOTE: These controls will be OR'ed with the necessary
 // default1 bits

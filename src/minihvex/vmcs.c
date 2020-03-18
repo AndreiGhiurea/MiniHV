@@ -650,7 +650,7 @@ VmcsInitializeVMXControls(
     if( IsBooleanFlagOn( primaryProcBasedControls, PROC_BASED_PRIMARY_USE_MSR_BITMAPS ) )
     {
         // need to set MSR bitmaps
-        LOG( "We are using MSR bitmaps :)\n" );
+        VmxWrite(VMCS_CONTROL_MSR_BITMAP_ADDRESS_FULL, VA2PA(gGlobalData.VmxCurrentSettings.MsrBitmap.BitmapBuffer));
     }
     else
     {

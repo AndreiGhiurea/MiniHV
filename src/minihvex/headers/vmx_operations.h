@@ -23,6 +23,8 @@ typedef struct _VMX_SETTINGS
 
     volatile DWORD              CpusReceivedSIPI;
 
+    BITMAP                      MsrBitmap;
+
     DWORD                       GuestPreloaderAddress;
     BYTE                        GuestPreloaderStartDiskDrive;
 
@@ -31,6 +33,13 @@ typedef struct _VMX_SETTINGS
     struct _REGISTER_AREA*      DummyRegisters;
 #endif
 } VMX_SETTINGS, *PVMX_SETTINGS;
+
+
+STATUS
+VmxAllocateAndInitBitmaps(
+    OUT     BITMAP*             Bitmap
+);
+
 
 //******************************************************************************
 // Function:    VmxConfigureGlobalStructures

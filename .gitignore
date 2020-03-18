@@ -58,3 +58,4 @@ bin/x64/Debug/CommonLib/CommonLib.lib
 bin/x64/Debug/HAL/HAL.lib
 *.opendb
 *.xml
+*.ipch
