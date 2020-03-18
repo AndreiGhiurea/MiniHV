@@ -415,7 +415,7 @@ VmcsInitializeHostState(
     VmxWrite( VMCS_HOST_RSP, (QWORD)pCpu->StackBase );
 
     // RIP
-    // this will hold the address of our vmexit handler
+    VmxWrite(VMCS_HOST_RIP, (QWORD)VmPreexitHandler );
 
     // CS, SS, DS, ES, FS, GS and TR selectors
     // CS, selector must be != 0x0
