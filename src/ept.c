@@ -4,19 +4,6 @@
 #include "native/memory.h"
 #include "data.h"
 
-
-//******************************************************************************
-// Function:      InitAndAllocEptStructure
-// Description: Creates an EPT paging structure or a mapping.
-// Returns:       void
-// Parameter:     IN PVOID PageTable - Structure which will describe new structure.
-// Parameter:     IN DWORD Size - Size of the newly allocated structure.
-// Parameter:     IN_OPT PVOID PhysicalAddress - Address of the mapping(used only
-//              when CreateStructure is FALSE)
-// Parameter:     IN BOOLEAN CreateStructure - if TRUE the function creates a
-//              mapping to a new EPT structure, else it maps PhysicalAddress
-// Parameter:   IN_OPT BYTE MemoryType - Used only if CreateStructure is FALSE
-//******************************************************************************
 static
 void
 InitAndAllocEptStructure(
@@ -34,16 +21,13 @@ ConfigureEPTP(
     OUT     EPTP* Ept
 )
 {
-    STATUS status;
-    PVOID pEptTable;
+    STATUS status = STATUS_SUCCESS;
+    PVOID pEptTable = NULL;
 
     if (NULL == Ept)
     {
         return STATUS_INVALID_PARAMETER1;
     }
-
-    status = STATUS_SUCCESS;
-    pEptTable = NULL;
 
     pEptTable = HvAllocPoolWithTag(PoolAllocateZeroMemory, PAGE_SIZE, HEAP_EPT_TAG, PAGE_SIZE);
     if (NULL == pEptTable)
@@ -52,9 +36,7 @@ ConfigureEPTP(
         return STATUS_HEAP_INSUFFICIENT_RESOURCES;
     }
 
-    ASSERT(gGlobalData.VmxConfigurationData.EptSupport.PageWalkLength4);
     Ept->PageWalkLength = 3;
-
     Ept->MemoryType = gGlobalData.VmxConfigurationData.EptSupport.MemoryType;
     Ept->PhysicalAddress = (QWORD)(VA2PA(pEptTable) >> SHIFT_FOR_EPT_PHYSICAL_ADDR);
 
@@ -72,12 +54,13 @@ EptMapGuestPA(
     IN      BOOLEAN     Invalidate
 )
 {
-    PVOID result;
+    BYTE* startAddress = NULL;
+    BYTE* endAddress = NULL;
 
-    EPT_PML4_ENTRY* pml4Entries;
-    EPT_PDPT_ENTRY_PD* pdptEntries;
-    EPT_PD_ENTRY_PT* pdEntries;
-    EPT_PT_ENTRY* ptEntries;
+    EPT_PML4_ENTRY* pml4Entries = NULL;
+    EPT_PDPT_ENTRY_PD* pdptEntries = NULL;
+    EPT_PD_ENTRY_PT* pdEntries = NULL;
+    EPT_PT_ENTRY* ptEntries = NULL;
 
     WORD pageOffset;
     WORD pteOffset;
@@ -85,73 +68,48 @@ EptMapGuestPA(
     WORD pdpteOffset;
     WORD pml4Offset;
 
-    DWORD offset;
-    PVOID tempAddress;
-    PVOID alignedAddress;
-    BYTE* endAllocation;
-
-    ASSERT(NULL != (PVOID)gGlobalData.VmxCurrentSettings.Ept.PhysicalAddress);
-
     if (0 == Size)
     {
         return NULL;
     }
 
-    result = NULL;
-
-    offset = 0;
-
-    alignedAddress = (PVOID)AlignAddressLower(GuestPA, PAGE_SIZE);
-    endAllocation = (BYTE*)GuestPA + Size;
-
-    while (((BYTE*)alignedAddress + offset) < endAllocation)
+    startAddress = (PVOID)AlignAddressLower(GuestPA, PAGE_SIZE);
+    endAddress = (BYTE*)GuestPA + Size;
+    for (; startAddress < endAddress; startAddress += PAGE_SIZE)
     {
-        tempAddress = (PVOID)((BYTE*)alignedAddress + offset);
-
-        pml4Offset = MASK_EPT_PML4_OFFSET(tempAddress);
-        pdpteOffset = MASK_EPT_PDPTE_OFFSET(tempAddress);
-        pdeOffset = MASK_EPT_PDE_OFFSET(tempAddress);
-        pteOffset = MASK_EPT_PTE_OFFSET(tempAddress);
-        pageOffset = MASK_EPT_PAGE_OFFSET(tempAddress);
+        pml4Offset = MASK_EPT_PML4_OFFSET(startAddress);
+        pdpteOffset = MASK_EPT_PDPTE_OFFSET(startAddress);
+        pdeOffset = MASK_EPT_PDE_OFFSET(startAddress);
+        pteOffset = MASK_EPT_PTE_OFFSET(startAddress);
+        pageOffset = MASK_EPT_PAGE_OFFSET(startAddress);
 
         pml4Entries = (EPT_PML4_ENTRY*)PA2VA(gGlobalData.VmxCurrentSettings.Ept.PhysicalAddress << SHIFT_FOR_EPT_PHYSICAL_ADDR);
         pml4Entries = &(pml4Entries[pml4Offset]);
-
         if (!IsEptEntryPresent(pml4Entries))
         {
             InitAndAllocEptStructure(pml4Entries, PAGE_SIZE, NULL, TRUE, MemoryType, MAX_BYTE, FALSE);
         }
 
-        tempAddress = (PVOID)(pml4Entries->PhysicalAddress << SHIFT_FOR_EPT_PHYSICAL_ADDR);
-        pdptEntries = (EPT_PDPT_ENTRY_PD*)PA2VA(tempAddress);
-
+        pdptEntries = (EPT_PDPT_ENTRY_PD*)PA2VA(pml4Entries->PhysicalAddress << SHIFT_FOR_EPT_PHYSICAL_ADDR);
         pdptEntries = &(pdptEntries[pdpteOffset]);
-
         if (!IsEptEntryPresent(pdptEntries))
         {
             InitAndAllocEptStructure(pdptEntries, PAGE_SIZE, NULL, TRUE, MemoryType, MAX_BYTE, FALSE);
         }
 
-        tempAddress = (PVOID)(pdptEntries->PhysicalAddress << SHIFT_FOR_EPT_PHYSICAL_ADDR);
-        pdEntries = (EPT_PD_ENTRY_PT*)PA2VA(tempAddress);
-
+        pdEntries = (EPT_PD_ENTRY_PT*)PA2VA(pdptEntries->PhysicalAddress << SHIFT_FOR_EPT_PHYSICAL_ADDR);
         pdEntries = &(pdEntries[pdeOffset]);
         if (!IsEptEntryPresent(pdEntries))
         {
             InitAndAllocEptStructure(pdEntries, PAGE_SIZE, NULL, TRUE, MemoryType, MAX_BYTE, FALSE);
         }
 
-        tempAddress = (PVOID)(pdEntries->PhysicalAddress << SHIFT_FOR_EPT_PHYSICAL_ADDR);
-        ptEntries = (EPT_PT_ENTRY*)PA2VA(tempAddress);
-
+        ptEntries = (EPT_PT_ENTRY*)PA2VA(pdEntries->PhysicalAddress << SHIFT_FOR_EPT_PHYSICAL_ADDR);
         ptEntries = &(ptEntries[pteOffset]);
-
         if ((!IsEptEntryPresent(ptEntries)) || (Overwrite))
         {
-            InitAndAllocEptStructure(ptEntries, PAGE_SIZE, (PVOID)((QWORD)alignedAddress + offset), FALSE, MemoryType, RwxAccess, Invalidate);
+            InitAndAllocEptStructure(ptEntries, PAGE_SIZE, (PVOID)((QWORD)startAddress), FALSE, MemoryType, MAX_BYTE, Invalidate);
         }
-
-        offset = offset + PAGE_SIZE;
     }
 
     return (PVOID)GPA2HPA(GuestPA);
@@ -174,8 +132,15 @@ InitAndAllocEptStructure(
     PVOID tempAddress;
     QWORD convertedAddress;
 
-    ASSERT(NULL != PageTable);
-    ASSERT(0 != Size);
+    if (NULL == PageTable)
+    {
+        return;
+    }
+
+    if (0 == Size)
+    {
+        return;
+    }
 
     pTablePointer = PageTable;
     memzero(pTablePointer, sizeof(PVOID));

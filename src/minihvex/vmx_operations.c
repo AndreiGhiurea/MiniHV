@@ -16,8 +16,6 @@
 // warning C28039: The type of actual parameter '24576|2048|((0<<1))|0' should exactly match the type 'VMCS_FIELD':
 #pragma warning(disable: 28039)
 
-#define BITMAP_ENTRIES_IN_A_PAGE                (PAGE_SIZE * BITS_PER_BYTE)
-
 STATUS
 VmxAllocateAndInitBitmaps(
     OUT BITMAP* Bitmap
@@ -29,30 +27,30 @@ VmxAllocateAndInitBitmaps(
     pMsrBitmap = NULL;
     status = STATUS_HEAP_INSUFFICIENT_RESOURCES;
 
-    if (NULL != Bitmap)
+    if (NULL == Bitmap)
     {
-        ASSERT(PAGE_SIZE == BitmapPreinit(Bitmap, BITMAP_ENTRIES_IN_A_PAGE));
-
-        pMsrBitmap = HvAllocPoolWithTag(PoolAllocateZeroMemory, PAGE_SIZE, HEAP_VMX_TAG, PAGE_SIZE);
-        if (NULL == pMsrBitmap)
-        {
-            LOGL("HvAllocPoolWithTag failed\n");
-            goto cleanup;
-        }
-
-        BitmapInit(Bitmap, pMsrBitmap);
+        return STATUS_INVALID_PARAMETER1;
     }
 
+    BitmapPreinit(Bitmap, (PAGE_SIZE * BITS_PER_BYTE));
+
+    pMsrBitmap = HvAllocPoolWithTag(PoolAllocateZeroMemory, PAGE_SIZE, HEAP_VMX_TAG, PAGE_SIZE);
+    if (NULL == pMsrBitmap)
+    {
+        LOGL("HvAllocPoolWithTag failed\n");
+        goto cleanup;
+    }
+
+    BitmapInit(Bitmap, pMsrBitmap);
+
     status = STATUS_SUCCESS;
+    return status;
 
 cleanup:
-    if (!SUCCEEDED(status))
+    if (pMsrBitmap != NULL)
     {
-        if (pMsrBitmap != NULL)
-        {
-            HvFreePoolWithTag(pMsrBitmap, HEAP_VMX_TAG);
-            pMsrBitmap = NULL;
-        }
+        HvFreePoolWithTag(pMsrBitmap, HEAP_VMX_TAG);
+        pMsrBitmap = NULL;
     }
 
     return status;
@@ -365,7 +363,6 @@ VmxRetrieveCapabilities(
     ASSERT(SUCCEEDED(status));
 
     LOGL("Misc Options: 0x%X\n", *((QWORD*)&VmxCapabilities->MiscOptions));
-
 
     // EXIT Controls
     LOG( "\n\nExit Controls:\n" );

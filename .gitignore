@@ -42,7 +42,6 @@
 
 # Kernel Module Compile Results
 *.mod*
-*.cmd
 .tmp_versions/
 modules.order
 Module.symvers
@@ -62,3 +61,6 @@ bin/x64/Debug/HAL/HAL.lib
 bin/x64/Debug/MINIHVEX15/MINIHVEX.bin
 PXE/MINIHVEX.bin
 PXE/HAL9000.bin
+PXE/HAL9000.bin
+PXE/MINIHVEX.bin
+*.xml
