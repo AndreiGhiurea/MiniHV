@@ -189,7 +189,7 @@
     <ClCompile Include="minihvex\check_input.c">
       <Filter>Source Files\core</Filter>
     </ClCompile>
-    <ClCompile Include="ept.c">
+    <ClCompile Include="minihvex\ept.c">
       <Filter>Source Files\virtualization</Filter>
     </ClCompile>
   </ItemGroup>

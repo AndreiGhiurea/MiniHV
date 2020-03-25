@@ -173,12 +173,12 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="ept.c" />
     <ClCompile Include="minihvex\acpi_interface.c" />
     <ClCompile Include="minihvex\acpi_osl.c" />
     <ClCompile Include="minihvex\apic.c" />
     <ClCompile Include="minihvex\check_input.c" />
     <ClCompile Include="minihvex\dmp_common.c" />
+    <ClCompile Include="minihvex\ept.c" />
     <ClCompile Include="minihvex\hv_assert.c" />
     <ClCompile Include="minihvex\cpumu.c" />
     <ClCompile Include="minihvex\display.c" />
