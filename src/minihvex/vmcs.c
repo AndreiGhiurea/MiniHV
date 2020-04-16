@@ -748,7 +748,7 @@ VmcsInitializeVMXControls(
     }
     else
     {
-        LOG( "We are not using XSAVES/XRSTORS :)\n" );
+        LOGPL( "We are not using XSAVES/XRSTORS :)\n" );
     }
 
 #pragma endregion

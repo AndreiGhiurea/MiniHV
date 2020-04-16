@@ -46,6 +46,20 @@ _VmExitSolveLapicAccessViolation(
     IN          DWORD               LapicOffset
     );
 
+// 18
+static
+STATUS
+VmExitSolveVmCall(
+    INOUT       REGISTER_AREA*            ProcessorState
+);
+
+// 55
+static
+STATUS
+VmExitSolveXsetbv(
+    INOUT      REGISTER_AREA*    ProcessorState
+);
+
 void
 VmExitHandler(
     INOUT       COMPLETE_PROCESSOR_STATE*        ProcessorState
@@ -141,6 +155,64 @@ VmExitHandler(
         else
         {
             LOG( "VmExitSolveSIPI failed with status: 0x%x\n", status );
+        }
+        break;
+    case VM_EXIT_VMCALL:                    // 18
+        status = VmExitSolveVmCall(&ProcessorState->RegisterArea);
+        if (SUCCEEDED(status))
+        {
+            solvedProblem = TRUE;
+        }
+        else
+        {
+            LOG("VmExitSolveVmCall failed with status: 0x%x\n", status);
+        }
+        break;
+    case VM_EXIT_CPUID:
+    {
+        DWORD index = (DWORD)ProcessorState->RegisterArea.RegisterValues[RegisterRax];
+        DWORD subIndex = (DWORD)ProcessorState->RegisterArea.RegisterValues[RegisterRcx];
+
+        CPUID_INFO cpuInfo = { 0 };
+
+        __cpuidex(cpuInfo.values, index, subIndex);
+
+        // A value of 1 indicates that the OS has set CR4.OSXSAVE[bit 18] to enable XSETBV / XGETBV
+        // instructions to access XCR0 and to support processor extended state management using
+        // XSAVE / XRSTOR
+
+        if (index == 1)
+        {
+            cpuInfo.FeatureInformation.ecx.VMX = 0;
+            cpuInfo.FeatureInformation.ecx.SMX = 0;
+            cpuInfo.FeatureInformation.ecx.HV = 0;
+
+            cpuInfo.FeatureInformation.ecx.OSXSAVE = IsBooleanFlagOn(VmxRead(VMCS_GUEST_CR4), CR4_OSXSAVE);
+        }
+
+        ProcessorState->RegisterArea.RegisterValues[RegisterRax] = cpuInfo.eax;
+        ProcessorState->RegisterArea.RegisterValues[RegisterRbx] = cpuInfo.ebx;
+        ProcessorState->RegisterArea.RegisterValues[RegisterRcx] = cpuInfo.ecx;
+        ProcessorState->RegisterArea.RegisterValues[RegisterRdx] = cpuInfo.edx;
+
+
+
+        VmAdvanceGuestRipByInstrLength(&ProcessorState->RegisterArea);
+
+        solvedProblem = TRUE;
+
+
+    }
+    break;
+    case VM_EXIT_XSETBV:                // 55
+        status = VmExitSolveXsetbv(&ProcessorState->RegisterArea);
+        if (SUCCEEDED(status))
+        {
+            solvedProblem = TRUE;
+        }
+        else
+        {
+            LOG("VmExitSolveXsetbv failed with status: 0x%x\n", status);
         }
         break;
     default:
@@ -396,6 +468,97 @@ _VmExitSolveLapicAccessViolation(
     }
 
     pVcpu->ProcessorState->RegisterArea.Rip += instr.size;
+
+    return STATUS_SUCCESS;
+}
+
+static
+STATUS
+VmExitSolveVmCall(
+    INOUT       REGISTER_AREA*            ProcessorState
+)
+{
+    STATUS status;
+    QWORD rax;
+    WORD* stackValues;
+
+    status = STATUS_SUCCESS;
+
+    rax = ProcessorState->RegisterValues[RegisterRax];
+    stackValues = NULL;
+
+    if ((INT15_E820 == rax))
+    {
+        if (ProcessorState->Rip > IVT_LIMIT)
+        {
+            return STATUS_VMX_UNEXPECTED_VMCALL;
+        }
+
+        status = SimulateInt15h(&(gGlobalData.SystemInformation.MemoryMap));
+
+        stackValues = (WORD*)MapMemory((PVOID)ProcessorState->RegisterValues[RegisterRsp], 3 * sizeof(WORD));
+        ASSERT(0 != stackValues);
+
+        if (IsBooleanFlagOn(ProcessorState->Rflags, RFLAGS_CARRY_FLAG_BIT))
+        {
+            *(stackValues + 2) = (*(stackValues + 2) | RFLAGS_CARRY_FLAG_BIT);
+        }
+        else
+        {
+            *(stackValues + 2) = (WORD)(*(stackValues + 2) & (~(RFLAGS_CARRY_FLAG_BIT)));
+        }
+
+        status = UnmapMemory(stackValues, 3 * sizeof(WORD));
+        ASSERT(SUCCEEDED(status));
+
+        VmAdvanceGuestRipByInstrLength(ProcessorState);
+    }
+    else
+    {
+        status = GuestInjectEvent(ExceptionInvalidOpcode, InterruptionTypeHardwareException, NULL);
+        if (!SUCCEEDED(status))
+        {
+            LOGPL("GuestInjectEvent failed with status: 0x%x\n", status);
+            status = STATUS_SUCCESS;
+        }
+
+    }
+
+    return status;
+}
+
+static
+STATUS
+VmExitSolveXsetbv(
+    INOUT      REGISTER_AREA*    ProcessorState
+)
+{
+    STATUS status;
+    QWORD value;
+    DWORD index;
+
+    if (NULL == ProcessorState)
+    {
+        return STATUS_INVALID_PARAMETER1;
+    }
+
+    index = QWORD_LOW(ProcessorState->RegisterValues[RegisterRcx]);
+
+    value = DWORDS_TO_QWORD(
+        QWORD_LOW(ProcessorState->RegisterValues[RegisterRdx]),
+        QWORD_LOW(ProcessorState->RegisterValues[RegisterRax])
+    );
+
+    LOGP("XSETBV: 0x%X\n", value);
+
+    status = CpumuSetFpuFeatures(value);
+    if (!SUCCEEDED(status))
+    {
+        LOG_FUNC_ERROR("CpumuSetFpuFeatures", status);
+        return status;
+    }
+
+    VmAdvanceGuestRipByInstrLength(ProcessorState);
 
     return STATUS_SUCCESS;
 }
