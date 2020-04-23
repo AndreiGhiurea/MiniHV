@@ -201,6 +201,9 @@
     <ClCompile Include="minihvex\intro.c">
       <Filter>Source Files\intro</Filter>
     </ClCompile>
+    <ClCompile Include="minihvex\mzpe.c">
+      <Filter>Source Files\intro</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="minihvex\headers\acpi_interface.h">
@@ -336,6 +339,9 @@
       <Filter>Header Files\debug\dump</Filter>
     </ClInclude>
     <ClInclude Include="minihvex\headers\intro.h">
+      <Filter>Header Files\intro</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\mzpe.h">
       <Filter>Header Files\intro</Filter>
     </ClInclude>
   </ItemGroup>

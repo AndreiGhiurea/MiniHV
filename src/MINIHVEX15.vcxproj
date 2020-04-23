@@ -199,6 +199,7 @@
     <ClCompile Include="minihvex\intro.c" />
     <ClCompile Include="minihvex\lock.c" />
     <ClCompile Include="minihvex\mtrr.c" />
+    <ClCompile Include="minihvex\mzpe.c" />
     <ClCompile Include="minihvex\paging_tables.c" />
     <ClCompile Include="minihvex\pci.c" />
     <ClCompile Include="minihvex\pit.c" />
@@ -245,6 +246,7 @@
     <ClInclude Include="minihvex\headers\minihv.h" />
     <ClInclude Include="minihvex\headers\mtrr.h" />
     <ClInclude Include="minihvex\headers\multiboot.h" />
+    <ClInclude Include="minihvex\headers\mzpe.h" />
     <ClInclude Include="minihvex\headers\paging_tables.h" />
     <ClInclude Include="minihvex\headers\pci.h" />
     <ClInclude Include="minihvex\headers\pit.h" />

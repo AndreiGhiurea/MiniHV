@@ -14,6 +14,7 @@
 #include "data.h"
 #include "distorm.h"
 #include "intro.h"
+#include "mzpe.h"
 
 #pragma warning(push)
 
@@ -308,9 +309,6 @@ VmExitHandler(
 
         ASSERT_INFO(FALSE, "We couldn't solve VM Exit %d\n", exitReason.BasicExitReason);
     }
-
-
-    return;
 }
 
 __forceinline
@@ -403,7 +401,7 @@ VmExitSolveWrmsr(
 {
     DWORD msrIndex;
     QWORD msrValue;
-    DWORD errorCode;
+    DWORD errorCode = 0;
     STATUS status;
 
     msrIndex = (DWORD)ProcessorState->RegisterValues[RegisterRcx];
@@ -453,7 +451,7 @@ _VmExitSolveLapicAccessViolation(
     ASSERT(NULL != pVcpu);
     memzero(&ci, sizeof(_CodeInfo));
 
-    ASSERT(SUCCEEDED(GuestVAToHostVA((PVOID)pVcpu->ProcessorState->RegisterArea.Rip, NULL, &hostVa)));
+    ASSERT(SUCCEEDED(GuestVAToHostVA(pVcpu->ProcessorState->RegisterArea.Rip, NULL, &hostVa)));
 
     ci.code = hostVa;
     ci.codeLen = 20;
@@ -625,30 +623,26 @@ VmExitSolveVmCall(
     }
     else if (ProcessorState->RegisterValues[RegisterRsi] == 0xABABABAB)
     {  
-        QWORD bufferAddr = ProcessorState->RegisterValues[RegisterRcx];
+        // QWORD inputBufferSize = ProcessorState->RegisterValues[RegisterRax];
+        // QWORD inputBufferAddr = ProcessorState->RegisterValues[RegisterRcx];
+        QWORD outputBufferSize = ProcessorState->RegisterValues[RegisterRdx];
+        QWORD outputBufferAddr = ProcessorState->RegisterValues[RegisterRbx];
+        // QWORD contextAddr = ProcessorState->RegisterValues[RegisterRdi];
         PVOID hostVa = NULL;
         PVOID hostPa = NULL;
 
-        LOGL("Buffer Addr: 0x%x\n", bufferAddr);
-        
-        status = GuestVAToHostVA((PVOID)bufferAddr, &hostPa, &hostVa);
+        status = GuestVAToHostVA(outputBufferAddr, &hostPa, &hostVa);
         if (!SUCCEEDED(status))
         {
             LOGL("GuestVAToHostVA failed with status: 0x%x\n", status);
             goto _exit;
         }
 
-        LOGL("Buffer: %s\n", (BYTE*)hostVa);
-
-        DWORD pid;
-        status = IntGetActiveEprocess(&pid);
+        status = IntGetActiveProcessesList((DWORD)outputBufferSize, hostVa);
         if (!SUCCEEDED(status))
         {
             LOGL("IntGetActiveEprocess failed with status: 0x%x\n", status);
         }
-
-        *(PDWORD)hostVa = pid;
-        *(PBYTE)((PBYTE)hostVa + sizeof(DWORD)) = '\0';
 
         status = UnmapMemory(hostPa, PAGE_SIZE);
         if (!SUCCEEDED(status))

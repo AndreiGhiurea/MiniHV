@@ -330,7 +330,7 @@ UnmapPML4Entry(
 PVOID
 VA64toPA(
     IN      PML4*       Pml4,
-    IN      PVOID       LogicalAddress
+    IN      QWORD       LogicalAddress
     )
 {
     PML4_ENTRY* pml4Entries;
@@ -353,7 +353,7 @@ VA64toPA(
         return NULL;
     }
 
-    if( NULL == LogicalAddress )
+    if( 0 == LogicalAddress )
     {
         return NULL;
     }
@@ -431,7 +431,7 @@ VA64toPA(
 PVOID
 VAPAEtoPA(
     IN        CR3_PAE_STRUCTURE*    Cr3,
-    IN        PVOID                LogicalAddress
+    IN        QWORD                LogicalAddress
 )
 {
     PDPT_PAE_ENTRY_PD* tableOfPdpts;
@@ -453,7 +453,7 @@ VAPAEtoPA(
         return NULL;
     }
 
-    if (NULL == LogicalAddress)
+    if (0 == LogicalAddress)
     {
         return NULL;
     }
@@ -510,7 +510,7 @@ VAPAEtoPA(
 PVOID
 VA32toPA(
     IN        CR3_STRUCTURE*        Cr3,
-    IN        PVOID                LogicalAddress
+    IN        QWORD                LogicalAddress
 )
 {
     PD32_ENTRY_PT* pageDirectory;
@@ -529,7 +529,7 @@ VA32toPA(
         return NULL;
     }
 
-    if (NULL == LogicalAddress)
+    if (0 == LogicalAddress)
     {
         return NULL;
     }

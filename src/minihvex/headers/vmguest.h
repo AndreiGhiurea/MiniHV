@@ -247,16 +247,41 @@ GuestUpdateAllSelectorsInfo(
 
 STATUS
 GuestVAToHostPA(
-    IN      PVOID       GuestVa,
+    IN      QWORD       GuestVa,
     OUT_PTR PVOID*      HostPa
     );
 
 STATUS
 GuestVAToHostVA(
-    IN          PVOID       GuestVa,
+    IN          QWORD       GuestVa,
     OUT_OPT_PTR PVOID*      HostPa,
     OUT_PTR     PVOID*      HostVa
     );
+
+STATUS 
+GuestReadDword(
+    _In_ QWORD GuestVa, 
+    _Out_ DWORD* ReadDword
+);
+
+STATUS 
+GuestReadByte(
+    _In_ QWORD GuestVa, 
+    _Out_ BYTE* ReadByte
+);
+
+STATUS 
+GuestReadQword(
+    _In_ QWORD GuestVa, 
+    _Out_ QWORD* ReadQword
+);
+
+STATUS 
+GuestReadSize(
+    _In_ QWORD GuestVa, 
+    _In_ DWORD Size, 
+    _Out_ PVOID Buffer
+);
 
 STATUS
 GuestInjectEvent(

@@ -28,6 +28,7 @@ C_HEADER_START
 //
 // standard types - define them with explicit length
 //
+typedef char                CHAR, *PCHAR;
 typedef unsigned __int8     BYTE, *PBYTE;
 typedef unsigned __int16    WORD, *PWORD;
 typedef unsigned __int32    DWORD, *PDWORD;

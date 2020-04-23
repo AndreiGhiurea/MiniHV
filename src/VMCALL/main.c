@@ -11,15 +11,13 @@ VOID _cdecl _VmcallToHV(
 
 int main()
 {
-    BYTE* buff = "This string is from guest user-mode";
+    CHAR outputBuffer[0x1000];
 
-    printf("Buffer addr: 0x%x\n", &buff[0]);
-    printf("Buffer: %s\n", buff);
+    _VmcallToHV(0, NULL, sizeof(outputBuffer), outputBuffer, NULL);
 
-    DWORD fs = __readfsdword(0x0);
-    printf("FS:[0x0]: %x\n", fs);
+    printf("Running Processes:\n");
 
-    _VmcallToHV(sizeof(buff), buff, 0, NULL, NULL);
+    printf(outputBuffer);
 
     return 0;
 }

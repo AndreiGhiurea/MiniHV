@@ -166,7 +166,7 @@ DumpCurrentVmcsGuestState(
 
     instrLength = fieldValue;
 
-    status = GuestVAToHostVA( ( PVOID ) guestRIP, NULL, &instructionVA );
+    status = GuestVAToHostVA(guestRIP, NULL, &instructionVA );
     if( SUCCEEDED( status ) )
     {
         LOG( "RIP[VA]: 0x%X\n", instructionVA );
@@ -345,7 +345,7 @@ DumpCurrentVmcsGuestState(
     fieldValue = VmxRead( VMCS_GUEST_GDTR_BASE);
     LOG( "Base Address: 0x%X\n", fieldValue );
 
-    status = GuestVAToHostVA((PVOID)fieldValue, NULL, &baseValue);
+    status = GuestVAToHostVA(fieldValue, NULL, &baseValue);
     ASSERT_INFO(SUCCEEDED(status), "Failed with status: 0x%x\n", status );
 
     guestGdt.Base = baseValue;
@@ -369,7 +369,7 @@ DumpCurrentVmcsGuestState(
 
     if (0 != fieldValue)
     {
-        status = GuestVAToHostVA((PVOID)fieldValue, NULL, &baseValue);
+        status = GuestVAToHostVA(fieldValue, NULL, &baseValue);
         ASSERT_INFO(SUCCEEDED(status), "Failed with status: 0x%x\n", status);
     }
     else

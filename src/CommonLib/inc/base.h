@@ -18,6 +18,11 @@ C_HEADER_START
 #define GB_SIZE                     (1024*MB_SIZE)
 #define TB_SIZE                     (1024*GB_SIZE)
 
+#define BYTE_MASK                   0xFF
+#define WORD_MASK                   0xFFFF
+#define DWORD_MASK                  0xFFFFFFFF
+#define QWORD_MASK                  0xFFFFFFFFFFFFFFFF
+
 #define PAGE_SIZE                   0x1000
 
 #define PAGE_MASK                   (~(PAGE_SIZE - 1))

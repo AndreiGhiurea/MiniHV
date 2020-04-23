@@ -175,7 +175,7 @@ GuestUpdateAllSelectorsInfo(
 
 STATUS
 GuestVAToHostPA(
-    IN      PVOID       GuestVa,
+    IN      QWORD       GuestVa,
     OUT_PTR PVOID*      HostPa
     )
 {
@@ -203,7 +203,7 @@ GuestVAToHostPA(
 
     // if we're here it's clear guest has paging set
     // and the NULL pointer becomes invalid
-    if (NULL == GuestVa)
+    if (0 == GuestVa)
     {
         return STATUS_INVALID_PARAMETER1;
     }
@@ -256,7 +256,7 @@ GuestVAToHostPA(
 
 STATUS
 GuestVAToHostVA(
-    IN          PVOID       GuestVa,
+    IN          QWORD       GuestVa,
     OUT_OPT_PTR PVOID*      HostPa,
     OUT_PTR     PVOID*      HostVa
     )
@@ -294,6 +294,208 @@ GuestVAToHostVA(
         *HostPa = hostPa;
     }
     *HostVa = pMappedAddress;
+
+    return status;
+}
+
+STATUS
+GuestReadDword(
+    _In_ QWORD GuestVa,
+    _Out_ DWORD* ReadDword
+)
+{
+    STATUS status;
+    PVOID pMappedAddress;
+    PVOID hostPa;
+
+    if (NULL == ReadDword)
+    {
+        return STATUS_INVALID_PARAMETER3;
+    }
+
+    if (0 == GuestVa)
+    {
+        return STATUS_INVALID_PARAMETER2;
+    }
+
+    status = STATUS_SUCCESS;
+    hostPa = NULL;
+    pMappedAddress = NULL;
+
+    status = GuestVAToHostPA(GuestVa, &hostPa);
+    if (!SUCCEEDED(status))
+    {
+        LOGP("GuestVAToHostPA failed for GuestVa: 0x%X\n", GuestVa);
+        return status;
+    }
+
+    pMappedAddress = MapMemory(hostPa, sizeof(DWORD));
+    if (NULL == pMappedAddress)
+    {
+        LOGP("MapMemory failed for GuestVa: 0x%X\n", GuestVa);
+        return STATUS_MEMORY_CANNOT_BE_MAPPED;
+    }
+
+    *ReadDword = *(PDWORD)pMappedAddress;
+
+    status = UnmapMemory(hostPa, sizeof(DWORD));
+    if (!SUCCEEDED(status))
+    {
+        LOGPL("UnmapMemory failed with status: 0x%x\n", status);
+    }
+
+    return status;
+}
+
+STATUS
+GuestReadQword(
+    _In_ QWORD GuestVa,
+    _Out_ QWORD* ReadQword
+)
+{
+    STATUS status;
+    PVOID pMappedAddress;
+    PVOID hostPa;
+
+    if (NULL == ReadQword)
+    {
+        return STATUS_INVALID_PARAMETER3;
+    }
+
+    if (0 == GuestVa)
+    {
+        return STATUS_INVALID_PARAMETER2;
+    }
+
+    status = STATUS_SUCCESS;
+    hostPa = NULL;
+    pMappedAddress = NULL;
+
+    status = GuestVAToHostPA(GuestVa, &hostPa);
+    if (!SUCCEEDED(status))
+    {
+        LOGP("GuestVAToHostPA failed for GuestVa: 0x%X\n", GuestVa);
+        return status;
+    }
+
+    pMappedAddress = MapMemory(hostPa, sizeof(QWORD));
+    if (NULL == pMappedAddress)
+    {
+        LOGP("MapMemory failed for GuestVa: 0x%X\n", GuestVa);
+        return STATUS_MEMORY_CANNOT_BE_MAPPED;
+    }
+
+    *ReadQword = *(PQWORD)pMappedAddress;
+
+    status = UnmapMemory(hostPa, sizeof(QWORD));
+    if (!SUCCEEDED(status))
+    {
+        LOGPL("UnmapMemory failed with status: 0x%x\n", status);
+    }
+
+    return status;
+}
+
+STATUS
+GuestReadByte(
+    _In_ QWORD GuestVa,
+    _Out_ BYTE* ReadByte
+)
+{
+    STATUS status;
+    PVOID pMappedAddress;
+    PVOID hostPa;
+
+    if (NULL == ReadByte)
+    {
+        return STATUS_INVALID_PARAMETER3;
+    }
+
+    if (0 == GuestVa)
+    {
+        return STATUS_INVALID_PARAMETER2;
+    }
+
+    status = STATUS_SUCCESS;
+    hostPa = NULL;
+    pMappedAddress = NULL;
+
+    status = GuestVAToHostPA(GuestVa, &hostPa);
+    if (!SUCCEEDED(status))
+    {
+        LOGP("GuestVAToHostPA failed for GuestVa: 0x%X\n", GuestVa);
+        return status;
+    }
+
+    pMappedAddress = MapMemory(hostPa, sizeof(BYTE));
+    if (NULL == pMappedAddress)
+    {
+        LOGP("MapMemory failed for GuestVa: 0x%X\n", GuestVa);
+        return STATUS_MEMORY_CANNOT_BE_MAPPED;
+    }
+
+    *ReadByte = *(PBYTE)pMappedAddress;
+
+    status = UnmapMemory(hostPa, sizeof(BYTE));
+    if (!SUCCEEDED(status))
+    {
+        LOGPL("UnmapMemory failed with status: 0x%x\n", status);
+    }
+
+    return status;
+}
+
+STATUS
+GuestReadSize(
+    _In_ QWORD GuestVa,
+    _In_ DWORD Size,
+    _Out_ PVOID Buffer
+)
+{
+    STATUS status;
+    PVOID pMappedAddress;
+    PVOID hostPa;
+
+    if (NULL == Buffer)
+    {
+        return STATUS_INVALID_PARAMETER3;
+    }
+
+    if (0 == GuestVa)
+    {
+        return STATUS_INVALID_PARAMETER2;
+    }
+
+    if (Size >= PAGE_SIZE)
+    {
+        return STATUS_INVALID_PARAMETER2;
+    }
+
+    status = STATUS_SUCCESS;
+    hostPa = NULL;
+    pMappedAddress = NULL;
+
+    status = GuestVAToHostPA(GuestVa, &hostPa);
+    if (!SUCCEEDED(status))
+    {
+        LOGP("GuestVAToHostPA failed for GuestVa: 0x%X\n", GuestVa);
+        return status;
+    }
+
+    pMappedAddress = MapMemory(hostPa, Size);
+    if (NULL == pMappedAddress)
+    {
+        LOGP("MapMemory failed for GuestVa: 0x%X\n", GuestVa);
+        return STATUS_MEMORY_CANNOT_BE_MAPPED;
+    }
+
+    memcpy(Buffer, pMappedAddress, Size);
+
+    status = UnmapMemory(hostPa, Size);
+    if (!SUCCEEDED(status))
+    {
+        LOGPL("UnmapMemory failed with status: 0x%x\n", status);
+    }
 
     return status;
 }

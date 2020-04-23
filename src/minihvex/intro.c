@@ -2,6 +2,7 @@
 #include "vmguest.h"
 #include "data.h"
 #include "vmx.h"
+#include "mzpe.h"
 
 STATUS
 IntFindKernelBase(
@@ -23,7 +24,7 @@ IntFindKernelBase(
     kernelAddr &= PAGE_MASK;
     while (!found && nrOfPages < 100)
     {
-        status = GuestVAToHostVA((PVOID)kernelAddr, &hostPa, &hostVa);
+        status = GuestVAToHostVA(kernelAddr, &hostPa, &hostVa);
         if (!SUCCEEDED(status))
         {
             LOGL("GuestVAToHostVA failed with status: 0x%x\n", status);
@@ -55,65 +56,83 @@ IntFindKernelBase(
 }
 
 STATUS
-IntGetActiveEprocess(DWORD* Pid
-)
+IntGetActiveProcessesList(
+    _In_ DWORD BufferSize,
+    _Inout_ CHAR* Buffer)
 {
     STATUS status = STATUS_SUCCESS;
-    QWORD fsBase = VmxRead(VMCS_GUEST_FS_BASE);
+    QWORD initialSystemProcessSymbol = 0;
+    DWORD initialSystemEprocess = 0;
+    PVOID hostVa = NULL;
     PVOID hostPa = NULL;
-    PBYTE hostVa = NULL;
-    QWORD currentThread = 0;
-    QWORD currentProcess = 0;
     DWORD processPid = 0;
+    BYTE processName[16] = { 0 };
+    DWORD eprocessAddr = 0;
+    DWORD copiedSize = 0;
+    DWORD listEntryAddr = 0;
+    LIST_ENTRY listEntry = { 0 };
+    CHAR tempBuffer[MAX_PATH];
 
-    status = GuestVAToHostVA((PVOID)fsBase, &hostPa, &hostVa);
+    if (gGlobalData.Intro.KernelBase == 0)
+    {
+        LOGL("Intro not initialized\n");
+        return STATUS_UNSUCCESSFUL;
+    }
+
+    status = MzpeFindExport(gGlobalData.Intro.KernelBase, "PsInitialSystemProcess", &initialSystemProcessSymbol);
+    if (!SUCCEEDED(status))
+    {
+        LOGL("MzpeFindExport failed with status: 0x%x\n", status);
+        return STATUS_UNSUCCESSFUL;
+    }
+
+    status = GuestReadDword(initialSystemProcessSymbol, &initialSystemEprocess);
+    if (!SUCCEEDED(status))
+    {
+        LOGL("GuestReadDword failed with status: 0x%x\n", status);
+        return STATUS_UNSUCCESSFUL;
+    }
+
+    LOGL("Initial System Eprocess: 0x%x\n", initialSystemEprocess);
+
+    eprocessAddr = initialSystemEprocess;
+
+    _get_next_process:
+
+    status = GuestVAToHostVA(eprocessAddr, &hostPa, &hostVa);
     if (!SUCCEEDED(status))
     {
         LOGL("GuestVAToHostVA failed with status: 0x%x\n", status);
         return STATUS_UNSUCCESSFUL;
     }
+    
+    processPid = *(PDWORD)((BYTE*)hostVa + 0xb4);
+    memcpy(processName, (BYTE*)hostVa + 0x17c, 15);
 
-    LOGL("FS Base: %x\n", fsBase);
-    LOGL("FS DWORD: %x\n", *(PDWORD)(hostVa));
+    listEntryAddr = (*(PDWORD)((BYTE*)hostVa + 0xb8));
+    status = GuestReadSize(listEntryAddr, sizeof(LIST_ENTRY), &listEntry);
+    if (!SUCCEEDED(status))
+    {
+        LOGL("GuestReadSize failed: 0x%x\n", status);
+    }
 
-    currentThread = *(PDWORD)(hostVa + 0x124);
-    LOGL("Current Thread: %x\n", currentThread);
+    sprintf(tempBuffer, "%s PID: %d\n", processName, processPid);
+    sprintf(Buffer + copiedSize, tempBuffer);
+    copiedSize += strlen(tempBuffer);
+
+    eprocessAddr = ((QWORD)listEntry.Flink - 0xb8) & DWORD_MASK;
 
     status = UnmapMemory(hostPa, PAGE_SIZE);
     if (!SUCCEEDED(status))
     {
         LOGL("UnmapMemory failed with status: 0x%x\n", status);
-        return STATUS_UNSUCCESSFUL;
     }
 
-    status = GuestVAToHostVA((PVOID)currentThread, &hostPa, &hostVa);
-    if (!SUCCEEDED(status))
+    if ((copiedSize < BufferSize) &&
+        (eprocessAddr != initialSystemEprocess))
     {
-        LOGL("GuestVAToHostVA failed with status: 0x%x\n", status);
-        return STATUS_UNSUCCESSFUL;
+        goto _get_next_process;
     }
-
-    currentProcess = *(PDWORD)(hostVa + 0x150);
-
-    status = UnmapMemory(hostPa, PAGE_SIZE);
-    if (!SUCCEEDED(status))
-    {
-        LOGL("UnmapMemory failed with status: 0x%x\n", status);
-        return STATUS_UNSUCCESSFUL;
-    }
-
-    status = GuestVAToHostVA((PVOID)currentProcess, &hostPa, &hostVa);
-    if (!SUCCEEDED(status))
-    {
-        LOGL("GuestVAToHostVA failed with status: 0x%x\n", status);
-        return STATUS_UNSUCCESSFUL;
-    }
-
-    processPid = *(PDWORD)(hostVa + 0xb4);
-
-    LOGL("Process PID: %d\n", processPid);
-
-    *Pid = processPid;
 
     return STATUS_SUCCESS;
 }

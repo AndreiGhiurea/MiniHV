@@ -7,6 +7,8 @@ IntFindKernelBase(
     _In_ QWORD KernelAddr
 );
 
-STATUS 
-IntGetActiveEprocess(DWORD* Pid
+STATUS
+IntGetActiveProcessesList(
+    _In_ DWORD BufferSize,
+    _Inout_ CHAR* Buffer
 );

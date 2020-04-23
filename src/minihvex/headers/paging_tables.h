@@ -64,7 +64,7 @@ UnmapPML4Entry(
 PVOID
 VA64toPA(
     IN      PML4*       Pml4,
-    IN      PVOID       LogicalAddress
+    IN      QWORD       LogicalAddress
     );
 
 //******************************************************************************
@@ -77,7 +77,7 @@ VA64toPA(
 PVOID
 VAPAEtoPA(
     IN        CR3_PAE_STRUCTURE*   Cr3,
-    IN        PVOID                LogicalAddress
+    IN        QWORD                LogicalAddress
 );
 
 //******************************************************************************
@@ -90,7 +90,7 @@ VAPAEtoPA(
 PVOID
 VA32toPA(
     IN        CR3_STRUCTURE*        Cr3,
-    IN        PVOID                LogicalAddress
+    IN        QWORD                LogicalAddress
 );
 
 #endif // _PAGING_TABLES_H_
