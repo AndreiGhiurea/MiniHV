@@ -311,6 +311,9 @@ STATIC_ASSERT(sizeof(IA32_STAR_MSR_DATA) == MSR_DATA_SIZE);
 #pragma warning(pop)
 #pragma pack(pop)
 
+
+#define     SYSENTER_EIP_MSR                    0x176
+
 #define     IA32_STAR                           0xC0000081
 #define     IA32_LSTAR                          0xC0000082
 #define     IA32_FMASK                          0xC0000084

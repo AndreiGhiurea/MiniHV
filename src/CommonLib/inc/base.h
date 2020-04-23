@@ -20,6 +20,8 @@ C_HEADER_START
 
 #define PAGE_SIZE                   0x1000
 
+#define PAGE_MASK                   (~(PAGE_SIZE - 1))
+
 #ifndef PAGE_SHIFT
 #define PAGE_SHIFT                  12
 #endif // PAGE_SHIFT

@@ -45,6 +45,12 @@ typedef struct _SYSTEM_INFORMATION
     QWORD                       HighestAvailablePhysicalAddress;
 } SYSTEM_INFORMATION, *PSYSTEM_INFORMATION;
 
+typedef struct _INTRO_DATA
+{
+    QWORD KernelBase;
+    QWORD SyscallEip;
+} INTRO_DATA, *PINTRO_DATA;
+
 typedef struct _GLOBAL_DATA
 {
     MINIHV_INFORMATION          MiniHvInformation;
@@ -72,6 +78,8 @@ typedef struct _GLOBAL_DATA
     TASK_CONFIGURATION          TaskData;
 
     MTRR_DATA                   MtrrData;
+
+    INTRO_DATA                  Intro;
 } GLOBAL_DATA, *PGLOBAL_DATA;
 
 extern GLOBAL_DATA gGlobalData;

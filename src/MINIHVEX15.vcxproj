@@ -19,7 +19,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
     <SpectreMitigation>false</SpectreMitigation>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
@@ -196,6 +196,7 @@
     <ClCompile Include="minihvex\init64.c" />
     <ClCompile Include="minihvex\init_asm.c" />
     <ClCompile Include="minihvex\int15_memory.c" />
+    <ClCompile Include="minihvex\intro.c" />
     <ClCompile Include="minihvex\lock.c" />
     <ClCompile Include="minihvex\mtrr.c" />
     <ClCompile Include="minihvex\paging_tables.c" />
@@ -236,6 +237,7 @@
     <ClInclude Include="minihvex\headers\idt_handlers.h" />
     <ClInclude Include="minihvex\headers\init_asm.h" />
     <ClInclude Include="minihvex\headers\int15_memory.h" />
+    <ClInclude Include="minihvex\headers\intro.h" />
     <ClInclude Include="minihvex\headers\ipc.h" />
     <ClInclude Include="minihvex\headers\ipc_handler.h" />
     <ClInclude Include="minihvex\headers\lock.h" />

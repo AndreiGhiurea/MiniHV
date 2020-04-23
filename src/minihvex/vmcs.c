@@ -651,6 +651,11 @@ VmcsInitializeVMXControls(
     {
         // need to set MSR bitmaps
         VmxWrite(VMCS_CONTROL_MSR_BITMAP_ADDRESS_FULL, VA2PA(gGlobalData.VmxCurrentSettings.MsrBitmap.BitmapBuffer));
+        
+        BYTE byteIndex = SYSENTER_EIP_MSR / BITS_PER_BYTE;
+        BYTE bitIndex = (BYTE)1 << (SYSENTER_EIP_MSR % BITS_PER_BYTE);
+        
+        gGlobalData.VmxCurrentSettings.MsrBitmap.BitmapBuffer[2048 + byteIndex] |= bitIndex;
     }
     else
     {

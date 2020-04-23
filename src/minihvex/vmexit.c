@@ -13,6 +13,7 @@
 #include "native/memory.h"
 #include "data.h"
 #include "distorm.h"
+#include "intro.h"
 
 #pragma warning(push)
 
@@ -40,6 +41,13 @@ VmExitSolveSIPI(
     IN          EXIT_QUALIFICATION_SIPI*    ExitQualification
     );
 
+// 9
+static
+STATUS
+VmExitSolveTaskSwitch(
+    IN          QWORD Reason
+    );
+
 static
 STATUS
 _VmExitSolveLapicAccessViolation(
@@ -52,6 +60,13 @@ STATUS
 VmExitSolveVmCall(
     INOUT       REGISTER_AREA*            ProcessorState
 );
+
+// 32
+static
+STATUS
+VmExitSolveWrmsr(
+    INOUT   REGISTER_AREA* ProcesorState
+    );
 
 // 55
 static
@@ -157,6 +172,18 @@ VmExitHandler(
             LOG( "VmExitSolveSIPI failed with status: 0x%x\n", status );
         }
         break;
+    case VM_EXIT_TASK_SWITCH:               // 9
+        LOG("TASK SWITCH EXIT\n");
+        status = VmExitSolveTaskSwitch(exitQualification);
+        if (SUCCEEDED(status))
+        {
+            solvedProblem = TRUE;
+        }
+        else
+        {
+            LOG("VmExitSolveTaskSwitch failed with status 0x%x\n", status);
+        }
+        break;
     case VM_EXIT_VMCALL:                    // 18
         status = VmExitSolveVmCall(&ProcessorState->RegisterArea);
         if (SUCCEEDED(status))
@@ -204,6 +231,24 @@ VmExitHandler(
 
     }
     break;
+    case VM_EXIT_WRMSR:                 // 32
+        status = VmExitSolveWrmsr(&ProcessorState->RegisterArea);
+        if (SUCCEEDED(status))
+        {
+            solvedProblem = TRUE;
+
+            // Initialize intro here
+            status = IntFindKernelBase(gGlobalData.Intro.SyscallEip);
+            if (!SUCCEEDED(status))
+            {
+                LOGL("IntFindKernelBase failed with status: 0x%x\n", status);
+            }
+        }
+        else
+        {
+            LOG("VmExitSolveWrmsr failed with status: 0x%x\n", status);
+        }
+        break;
     case VM_EXIT_XSETBV:                // 55
         status = VmExitSolveXsetbv(&ProcessorState->RegisterArea);
         if (SUCCEEDED(status))
@@ -319,6 +364,71 @@ VmExitSolveSIPI(
         pVcpu->ExpectingGPAfterSIPI = TRUE;
 
         pVcpu->ReceivedSIPI = TRUE;
+    }
+
+    return STATUS_SUCCESS;
+}
+
+// 9
+static
+STATUS
+VmExitSolveTaskSwitch(
+    IN QWORD Reason
+    )
+{
+    QWORD reason;
+
+    reason = (Reason >> 30) & 0x3;
+    switch (reason) {
+    case 0:
+        LOG("TSR CALL\n");
+    case 1:
+        LOG("TSR_IRET\n");
+    case 2:
+        LOG("TSR_JMP\n");
+    case 3:
+        LOG("TSR_IDT_GATE\n");
+    default:
+        LOG("Invalid reason %d\n", reason);
+    }
+
+    return STATUS_SUCCESS;
+}
+
+// 32
+static
+STATUS
+VmExitSolveWrmsr(
+    INOUT   REGISTER_AREA* ProcessorState)
+{
+    DWORD msrIndex;
+    QWORD msrValue;
+    DWORD errorCode;
+    STATUS status;
+
+    msrIndex = (DWORD)ProcessorState->RegisterValues[RegisterRcx];
+    status = STATUS_SUCCESS;
+    msrValue = DWORDS_TO_QWORD(ProcessorState->RegisterValues[RegisterRdx], ProcessorState->RegisterValues[RegisterRax]);
+
+    switch (msrIndex)
+    {
+    case SYSENTER_EIP_MSR:
+        status = STATUS_SUCCESS;
+        VmxWrite(VMCS_GUEST_IA32_SYSENTER_EIP, msrValue);
+        gGlobalData.Intro.SyscallEip = msrValue;
+        break;
+    default:
+        status = STATUS_UNSUCCESSFUL;
+    }
+    
+    if (!SUCCEEDED(status))
+    {
+        status = GuestInjectEvent(ExceptionGeneralProtection, InterruptionTypeHardwareException, &errorCode);
+    }
+    else
+    {
+        LOGL("WRMSR at index 0x%x with value: 0x%X\n", msrIndex, msrValue);
+        VmAdvanceGuestRipByInstrLength(ProcessorState);
     }
 
     return STATUS_SUCCESS;
@@ -486,7 +596,7 @@ VmExitSolveVmCall(
 
     rax = ProcessorState->RegisterValues[RegisterRax];
     stackValues = NULL;
-
+    
     if ((INT15_E820 == rax))
     {
         if (ProcessorState->Rip > IVT_LIMIT)
@@ -498,7 +608,7 @@ VmExitSolveVmCall(
 
         stackValues = (WORD*)MapMemory((PVOID)ProcessorState->RegisterValues[RegisterRsp], 3 * sizeof(WORD));
         ASSERT(0 != stackValues);
-
+        
         if (IsBooleanFlagOn(ProcessorState->Rflags, RFLAGS_CARRY_FLAG_BIT))
         {
             *(stackValues + 2) = (*(stackValues + 2) | RFLAGS_CARRY_FLAG_BIT);
@@ -507,11 +617,49 @@ VmExitSolveVmCall(
         {
             *(stackValues + 2) = (WORD)(*(stackValues + 2) & (~(RFLAGS_CARRY_FLAG_BIT)));
         }
-
+        
         status = UnmapMemory(stackValues, 3 * sizeof(WORD));
         ASSERT(SUCCEEDED(status));
 
         VmAdvanceGuestRipByInstrLength(ProcessorState);
+    }
+    else if (ProcessorState->RegisterValues[RegisterRsi] == 0xABABABAB)
+    {  
+        QWORD bufferAddr = ProcessorState->RegisterValues[RegisterRcx];
+        PVOID hostVa = NULL;
+        PVOID hostPa = NULL;
+
+        LOGL("Buffer Addr: 0x%x\n", bufferAddr);
+        
+        status = GuestVAToHostVA((PVOID)bufferAddr, &hostPa, &hostVa);
+        if (!SUCCEEDED(status))
+        {
+            LOGL("GuestVAToHostVA failed with status: 0x%x\n", status);
+            goto _exit;
+        }
+
+        LOGL("Buffer: %s\n", (BYTE*)hostVa);
+
+        DWORD pid;
+        status = IntGetActiveEprocess(&pid);
+        if (!SUCCEEDED(status))
+        {
+            LOGL("IntGetActiveEprocess failed with status: 0x%x\n", status);
+        }
+
+        *(PDWORD)hostVa = pid;
+        *(PBYTE)((PBYTE)hostVa + sizeof(DWORD)) = '\0';
+
+        status = UnmapMemory(hostPa, PAGE_SIZE);
+        if (!SUCCEEDED(status))
+        {
+            LOGL("UnmapMemory failed with status: 0x%x\n", status);
+        }
+
+    _exit:
+        VmAdvanceGuestRipByInstrLength(ProcessorState);
+
+        status = STATUS_SUCCESS;
     }
     else
     {

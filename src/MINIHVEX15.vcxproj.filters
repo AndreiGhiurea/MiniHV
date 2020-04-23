@@ -79,6 +79,12 @@
     <Filter Include="Header Files\base\yasm">
       <UniqueIdentifier>{7a1e3ac6-95ed-499d-b3d7-3ec398b8c1ac}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\intro">
+      <UniqueIdentifier>{c9927a33-38fb-4125-8a5a-5a9905b39442}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\intro">
+      <UniqueIdentifier>{8942f8fd-b8fa-406d-942c-6faeedc7662e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="minihvex\vmcs.c">
@@ -191,6 +197,9 @@
     </ClCompile>
     <ClCompile Include="minihvex\ept.c">
       <Filter>Source Files\virtualization</Filter>
+    </ClCompile>
+    <ClCompile Include="minihvex\intro.c">
+      <Filter>Source Files\intro</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -325,6 +334,9 @@
     </ClInclude>
     <ClInclude Include="minihvex\headers\dmp_common.h">
       <Filter>Header Files\debug\dump</Filter>
+    </ClInclude>
+    <ClInclude Include="minihvex\headers\intro.h">
+      <Filter>Header Files\intro</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

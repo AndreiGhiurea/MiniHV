@@ -1,0 +1,29 @@
+global __VmcallToHV
+
+[bits 32]
+; eax - 1st arg
+; ecx - 2nd arg
+; edx - 3rd arg
+; ebx - 4th arg
+; edi - 5th arg
+__VmcallToHV:
+	; non-volatile registers ebx, edi, must be saved
+	push 	ebx
+	push	edi
+    push    esi
+
+    mov     esi,    0xABABABAB
+
+	mov		eax,	[esp+0xC+0x4]
+	mov		ecx,	[esp+0xC+0x8]
+	mov		edx,	[esp+0xC+0xC]
+	mov		ebx,	[esp+0xC+0x10]
+	mov		edi,	[esp+0xC+0x14]
+
+	vmcall
+
+    pop     esi
+	pop		edi
+	pop		ebx
+
+	ret

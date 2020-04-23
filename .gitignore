@@ -64,3 +64,5 @@ PXE/HAL9000.bin
 PXE/HAL9000.bin
 PXE/MINIHVEX.bin
 *.xml
+*.log
+*.log
