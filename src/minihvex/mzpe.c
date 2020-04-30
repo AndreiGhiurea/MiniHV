@@ -63,16 +63,11 @@ STATUS MzpeFindExport(
             goto _cleanup_and_exit;
         }
 
-        // DWORD noOfNames = exportDir->NumberOfNames;
         DWORD noOfFunctions = exportDir->NumberOfFunctions;
 
         numberOfPages = (noOfFunctions * sizeof(DWORD)) / PAGE_SIZE;
-        if ((noOfFunctions * sizeof(DWORD)) % PAGE_SIZE)
-        {
-            numberOfPages++;
-        }
 
-        for (int i = numberOfPages - 1; i >= 0; i--)
+        for (int i = numberOfPages; i >= 0; i--)
         {
             exportNamePointerTable = (DWORD*)((BYTE*)ImageBase + exportDir->AddressOfNames + i * PAGE_SIZE);
             status = GuestVAToHostVA((QWORD)exportNamePointerTable, &exportNamePointerTablePa, &exportNamePointerTable);
@@ -139,7 +134,7 @@ STATUS MzpeFindExport(
 
         _cleanup_and_exit:
 
-        for (DWORD i = 0; i < numberOfPages; i++)
+        for (DWORD i = 0; i <= numberOfPages; i++)
         {
             if (NULL != exportNamePointerTablePa)
             {

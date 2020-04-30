@@ -73,7 +73,7 @@ IntGetActiveProcessesList(
     LIST_ENTRY listEntry = { 0 };
     CHAR tempBuffer[MAX_PATH];
 
-    if (gGlobalData.Intro.KernelBase == 0)
+    if (0 == gGlobalData.Intro.KernelBase)
     {
         LOGL("Intro not initialized\n");
         return STATUS_UNSUCCESSFUL;

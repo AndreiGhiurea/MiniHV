@@ -239,7 +239,11 @@ VmExitHandler(
             solvedProblem = TRUE;
 
             // Initialize intro here
-            status = IntFindKernelBase(gGlobalData.Intro.SyscallEip);
+            if (0 != gGlobalData.Intro.SyscallEip)
+            {
+                status = IntFindKernelBase(gGlobalData.Intro.SyscallEip);
+            }
+
             if (!SUCCEEDED(status))
             {
                 LOGL("IntFindKernelBase failed with status: 0x%x\n", status);
