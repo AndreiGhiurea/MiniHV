@@ -397,6 +397,55 @@ GuestReadQword(
 }
 
 STATUS
+GuestReadWord(
+    _In_ QWORD GuestVa,
+    _Out_ WORD* ReadWord
+)
+{
+    STATUS status;
+    PVOID pMappedAddress;
+    PVOID hostPa;
+
+    if (NULL == ReadWord)
+    {
+        return STATUS_INVALID_PARAMETER3;
+    }
+
+    if (0 == GuestVa)
+    {
+        return STATUS_INVALID_PARAMETER2;
+    }
+
+    status = STATUS_SUCCESS;
+    hostPa = NULL;
+    pMappedAddress = NULL;
+
+    status = GuestVAToHostPA(GuestVa, &hostPa);
+    if (!SUCCEEDED(status))
+    {
+        LOGP("GuestVAToHostPA failed for GuestVa: 0x%X\n", GuestVa);
+        return status;
+    }
+
+    pMappedAddress = MapMemory(hostPa, sizeof(WORD));
+    if (NULL == pMappedAddress)
+    {
+        LOGP("MapMemory failed for GuestVa: 0x%X\n", GuestVa);
+        return STATUS_MEMORY_CANNOT_BE_MAPPED;
+    }
+
+    *ReadWord = *(PWORD)pMappedAddress;
+
+    status = UnmapMemory(hostPa, sizeof(WORD));
+    if (!SUCCEEDED(status))
+    {
+        LOGPL("UnmapMemory failed with status: 0x%x\n", status);
+    }
+
+    return status;
+}
+
+STATUS
 GuestReadByte(
     _In_ QWORD GuestVa,
     _Out_ BYTE* ReadByte

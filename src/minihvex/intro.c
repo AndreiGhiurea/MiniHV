@@ -13,8 +13,7 @@ IntFindKernelBase(
     BOOLEAN found = FALSE;
     DWORD nrOfPages = 0;
     QWORD kernelAddr = KernelAddr;
-    PBYTE hostVa = NULL;
-    PVOID hostPa = NULL;
+    WORD readWord = 0;
 
     if (0 == KernelAddr)
     {
@@ -24,24 +23,18 @@ IntFindKernelBase(
     kernelAddr &= PAGE_MASK;
     while (!found && nrOfPages < 100)
     {
-        status = GuestVAToHostVA(kernelAddr, &hostPa, &hostVa);
+        status = GuestReadWord(kernelAddr, &readWord);
         if (!SUCCEEDED(status))
         {
-            LOGL("GuestVAToHostVA failed with status: 0x%x\n", status);
+            LOGL("GuestReadWord failed with status: 0x%x\n", status);
             return STATUS_UNSUCCESSFUL;
         }
 
-        if (hostVa[0] == 'M' && hostVa[1] == 'Z')
+        if ('ZM' == readWord)
         {
             LOGL("Kernel Base found at: 0x%x\n", kernelAddr);
             gGlobalData.Intro.KernelBase = kernelAddr;
             found = TRUE;
-        }
-
-        status = UnmapMemory(hostPa, PAGE_SIZE);
-        if (!SUCCEEDED(status))
-        {
-            LOGL("UnmapMemory failed with status: 0x%x\n", status);
         }
 
         if (found)
@@ -119,6 +112,7 @@ IntGetActiveProcessesList(
     sprintf(tempBuffer, "%s PID: %d\n", processName, processPid);
     sprintf(Buffer + copiedSize, tempBuffer);
     copiedSize += strlen(tempBuffer);
+    LOGL("%s", tempBuffer);
 
     eprocessAddr = ((QWORD)listEntry.Flink - 0xb8) & DWORD_MASK;
 

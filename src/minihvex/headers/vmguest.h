@@ -264,6 +264,12 @@ GuestReadDword(
     _Out_ DWORD* ReadDword
 );
 
+STATUS
+GuestReadWord(
+    _In_ QWORD GuestVa,
+    _Out_ WORD* ReadByte
+);
+
 STATUS 
 GuestReadByte(
     _In_ QWORD GuestVa, 
