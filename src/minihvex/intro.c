@@ -51,7 +51,8 @@ IntFindKernelBase(
 STATUS
 IntGetActiveProcessesList(
     _In_ DWORD BufferSize,
-    _Inout_ CHAR* Buffer)
+    _Out_ CHAR* const Buffer,
+    _Out_opt_ DWORD* const NrOfProcesses)
 {
     STATUS status = STATUS_SUCCESS;
     QWORD initialSystemProcessSymbol = 0;
@@ -62,14 +63,19 @@ IntGetActiveProcessesList(
     BYTE processName[16] = { 0 };
     DWORD eprocessAddr = 0;
     DWORD copiedSize = 0;
-    DWORD listEntryAddr = 0;
-    LIST_ENTRY listEntry = { 0 };
-    CHAR tempBuffer[MAX_PATH];
+    DWORD listEntryFlink = 0;
+    CHAR tempBuffer[255];
 
     if (0 == gGlobalData.Intro.KernelBase)
     {
         LOGL("Intro not initialized\n");
         return STATUS_UNSUCCESSFUL;
+    }
+
+    if (NULL == Buffer)
+    {
+        LOGL("Buffer is NULL\n");
+        return STATUS_INVALID_PARAMETER2;
     }
 
     status = MzpeFindExport(gGlobalData.Intro.KernelBase, "PsInitialSystemProcess", &initialSystemProcessSymbol);

@@ -10,5 +10,6 @@ IntFindKernelBase(
 STATUS
 IntGetActiveProcessesList(
     _In_ DWORD BufferSize,
-    _Inout_ CHAR* Buffer
+    _Out_ CHAR* const Buffer,
+    _Out_opt_ DWORD* const NrOfProcesses
 );

@@ -631,27 +631,48 @@ VmExitSolveVmCall(
         // QWORD inputBufferAddr = ProcessorState->RegisterValues[RegisterRcx];
         QWORD outputBufferSize = ProcessorState->RegisterValues[RegisterRdx];
         QWORD outputBufferAddr = ProcessorState->RegisterValues[RegisterRbx];
-        // QWORD contextAddr = ProcessorState->RegisterValues[RegisterRdi];
-        PVOID hostVa = NULL;
-        PVOID hostPa = NULL;
+        QWORD contextAddr = ProcessorState->RegisterValues[RegisterRdi];
+        PVOID hostOutputBufferVa = NULL;
+        PVOID hostOutputBufferPa = NULL;
+        PVOID hostContextVa = NULL;
+        PVOID hostContextPa = NULL;
 
-        status = GuestVAToHostVA(outputBufferAddr, &hostPa, &hostVa);
+        status = GuestVAToHostVA(outputBufferAddr, &hostOutputBufferPa, &hostOutputBufferVa);
         if (!SUCCEEDED(status))
         {
             LOGL("GuestVAToHostVA failed with status: 0x%x\n", status);
             goto _exit;
         }
 
-        status = IntGetActiveProcessesList((DWORD)outputBufferSize, hostVa);
+        if (0 != contextAddr)
+        {
+            status = GuestVAToHostVA(contextAddr, &hostContextPa, &hostContextVa);
+            if (!SUCCEEDED(status))
+            {
+                LOGL("GuestVAToHostVA failed with status: 0x%x\n", status);
+                goto _exit;
+            }
+        }
+
+        status = IntGetActiveProcessesList((DWORD)outputBufferSize, hostOutputBufferVa, hostContextVa);
         if (!SUCCEEDED(status))
         {
             LOGL("IntGetActiveEprocess failed with status: 0x%x\n", status);
         }
 
-        status = UnmapMemory(hostPa, PAGE_SIZE);
+        status = UnmapMemory(hostOutputBufferPa, PAGE_SIZE);
         if (!SUCCEEDED(status))
         {
             LOGL("UnmapMemory failed with status: 0x%x\n", status);
+        }
+
+        if (hostContextPa != NULL)
+        {
+            status = UnmapMemory(hostContextPa, PAGE_SIZE);
+            if (!SUCCEEDED(status))
+            {
+                LOGL("UnmapMemory failed with status: 0x%x\n", status);
+            }
         }
 
     _exit:
