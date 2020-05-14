@@ -102,11 +102,14 @@ IntGetActiveProcessesList(
     processPid = *(PDWORD)((BYTE*)hostVa + 0xb4);
     memcpy(processName, (BYTE*)hostVa + 0x17c, 15);
 
-    listEntryAddr = (*(PDWORD)((BYTE*)hostVa + 0xb8));
-    status = GuestReadSize(listEntryAddr, sizeof(LIST_ENTRY), &listEntry);
-    if (!SUCCEEDED(status))
+    if (0 == processPid)
     {
-        LOGL("GuestReadSize failed: 0x%x\n", status);
+        goto _skip;
+    }
+
+    if (NULL != NrOfProcesses)
+    {
+        (*NrOfProcesses)++;
     }
 
     sprintf(tempBuffer, "%s PID: %d\n", processName, processPid);
@@ -116,6 +119,7 @@ IntGetActiveProcessesList(
 
     eprocessAddr = ((QWORD)listEntry.Flink - 0xb8) & DWORD_MASK;
 
+_skip:
     status = UnmapMemory(hostPa, PAGE_SIZE);
     if (!SUCCEEDED(status))
     {
