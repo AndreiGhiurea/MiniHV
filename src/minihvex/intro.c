@@ -101,6 +101,9 @@ IntGetActiveProcessesList(
     
     processPid = *(PDWORD)((BYTE*)hostVa + 0xb4);
     memcpy(processName, (BYTE*)hostVa + 0x17c, 15);
+    processName[15] = '\0';
+    listEntryFlink = (*(PDWORD)((BYTE*)hostVa + 0xb8));
+    eprocessAddr = listEntryFlink - 0xb8;
 
     if (0 == processPid)
     {
@@ -112,12 +115,13 @@ IntGetActiveProcessesList(
         (*NrOfProcesses)++;
     }
 
-    sprintf(tempBuffer, "%s PID: %d\n", processName, processPid);
-    sprintf(Buffer + copiedSize, tempBuffer);
+    sprintf(tempBuffer, "%s;%d;", processName, processPid);  
+    memcpy(Buffer + copiedSize, tempBuffer, strlen(tempBuffer));
     copiedSize += strlen(tempBuffer);
-    LOGL("%s", tempBuffer);
+    *(Buffer + copiedSize) = '\0';
 
-    eprocessAddr = ((QWORD)listEntry.Flink - 0xb8) & DWORD_MASK;
+    sprintf(tempBuffer, "%s PID: %d", processName, processPid);
+    LOGL("%s\n", tempBuffer);
 
 _skip:
     status = UnmapMemory(hostPa, PAGE_SIZE);
